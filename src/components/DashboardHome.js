@@ -15,19 +15,19 @@ const DashboardHome = ({ onNavigate, currentUser, sales, purchases, users, onLog
   const calculateCashierStats = () => {
     // Filtrar solo usuarios cajeros
     const cashiers = users.filter(user => user.role === 'cashier');
-    
+
     // Crear estadísticas para cada cajero
     const stats = cashiers.map(cashier => {
       // Filtrar ventas realizadas por este cajero
       const cashierSales = sales.filter(sale => sale.userId === cashier.id);
       const totalSalesAmount = cashierSales.reduce((sum, sale) => sum + sale.total, 0);
       const salesCount = cashierSales.length;
-      
+
       // Filtrar compras realizadas por este cajero
       const cashierPurchases = purchases.filter(purchase => purchase.userId === cashier.id);
       const totalPurchasesAmount = cashierPurchases.reduce((sum, purchase) => sum + purchase.total, 0);
       const purchasesCount = cashierPurchases.length;
-      
+
       return {
         id: cashier.id,
         name: cashier.name,
@@ -37,7 +37,7 @@ const DashboardHome = ({ onNavigate, currentUser, sales, purchases, users, onLog
         purchasesCount
       };
     });
-    
+
     setCashierStats(stats);
   };
 
@@ -48,9 +48,19 @@ const DashboardHome = ({ onNavigate, currentUser, sales, purchases, users, onLog
   const isAdmin = currentUser?.role === 'admin';
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
+    <div
+      className="flex flex-col items-center justify-center h-full p-6 relative overflow-auto"
+      style={{
+        backgroundImage: 'url(/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay para mejorar legibilidad */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
       {isAdmin && (
-        <div className="bg-white p-8 rounded-3xl shadow-2xl w-full mb-8">
+        <div className="relative bg-white bg-opacity-95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl w-full mb-8 z-10">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-3xl font-bold text-gray-800">Estadísticas por Cajero</h3>
             <button
@@ -60,7 +70,7 @@ const DashboardHome = ({ onNavigate, currentUser, sales, purchases, users, onLog
               {showStats ? 'Minimizar' : 'Maximizar'}
             </button>
           </div>
-          
+
           {showStats && (
             <div>
               {cashierStats.length === 0 ? (
@@ -83,7 +93,7 @@ const DashboardHome = ({ onNavigate, currentUser, sales, purchases, users, onLog
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded-xl overflow-hidden">
                       <thead className="bg-gray-100 border-b-2 border-gray-200">
@@ -114,10 +124,10 @@ const DashboardHome = ({ onNavigate, currentUser, sales, purchases, users, onLog
           )}
         </div>
       )}
-      
-      <div className="bg-white p-10 rounded-3xl shadow-2xl text-center max-w-4xl w-full transform transition-all duration-500 hover:scale-105">
-        <h2 className="text-5xl font-extrabold text-gray-800 mb-6 animate-fade-in-down">
-          ¡Bienvenido al Gestor de Vapeadores!
+
+      <div className="relative bg-white bg-opacity-95 backdrop-blur-sm p-10 rounded-3xl shadow-2xl text-center max-w-4xl w-full transform transition-all duration-500 hover:scale-105 z-10">
+        <h2 className="text-5xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-down">
+          ¡Bienvenidos a Electro ⚡Car!
         </h2>
         <p className="text-xl text-gray-600 mb-4 leading-relaxed animate-fade-in-up">
           {isAdmin
@@ -189,7 +199,7 @@ const DashboardHome = ({ onNavigate, currentUser, sales, purchases, users, onLog
           >
             Productos Defectuosos
           </button>
-          
+
           {/* Botones solo para admin */}
           {isAdmin && (
             <>

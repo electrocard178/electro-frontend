@@ -1205,7 +1205,7 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
 
   // Main render
   return (
-    <div className="p-6">
+    <div className="h-full overflow-auto p-6">
       <div className="mb-6 flex justify-between items-center">
         <div className="space-x-2">
           <button onClick={() => setReportType('sales')} className={`px-4 py-2 rounded ${reportType === 'sales' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Ventas</button>

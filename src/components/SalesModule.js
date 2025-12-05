@@ -100,7 +100,7 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
 
   // Admin ve todas las ventas por defecto; si hay selectedBranch la limita a esa sucursal.
   let filteredSales = sales;
-  
+
   if (userRole === 'admin') {
     if (selectedBranch) {
       filteredSales = sales.filter(sale => {
@@ -209,84 +209,84 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
 
 
   const handlePaymentMethodChange = (e) => {
-      const newPaymentMethod = e.target.value;
-      setModuleState(prev => ({
-        ...prev,
-        paymentMethod: newPaymentMethod,
-        // Limpiar monto recibido si se cambia a tarjeta
-        amountReceived: newPaymentMethod === 'tarjeta' ? '' : prev.amountReceived,
-        // Inicializar montos mixtos si es mixto, limpiar si no lo es
-        cashAmount: newPaymentMethod === 'mixto' ? (prev.cashAmount !== undefined && prev.cashAmount !== null ? prev.cashAmount : '') : '',
-        cardAmount: newPaymentMethod === 'mixto' ? (prev.cardAmount !== undefined && prev.cardAmount !== null ? prev.cardAmount : '') : '',
-      }));
-    };
+    const newPaymentMethod = e.target.value;
+    setModuleState(prev => ({
+      ...prev,
+      paymentMethod: newPaymentMethod,
+      // Limpiar monto recibido si se cambia a tarjeta
+      amountReceived: newPaymentMethod === 'tarjeta' ? '' : prev.amountReceived,
+      // Inicializar montos mixtos si es mixto, limpiar si no lo es
+      cashAmount: newPaymentMethod === 'mixto' ? (prev.cashAmount !== undefined && prev.cashAmount !== null ? prev.cashAmount : '') : '',
+      cardAmount: newPaymentMethod === 'mixto' ? (prev.cardAmount !== undefined && prev.cardAmount !== null ? prev.cardAmount : '') : '',
+    }));
+  };
 
- const handleAddProductToSale = useCallback(() => {
-   const product = products.find(p => p._id === selectedProduct);
-   const finalPrice = priceOverride !== '' ? parseFloat(priceOverride) : (product ? product.price : 0);
+  const handleAddProductToSale = useCallback(() => {
+    const product = products.find(p => p._id === selectedProduct);
+    const finalPrice = priceOverride !== '' ? parseFloat(priceOverride) : (product ? product.price : 0);
 
-   // Usar currentUser del prop (no localStorage, ya que no se usa)
-   // Determinar el stock disponible según el rol y sucursal del usuario actual
-   let availableStock = 0;
+    // Usar currentUser del prop (no localStorage, ya que no se usa)
+    // Determinar el stock disponible según el rol y sucursal del usuario actual
+    let availableStock = 0;
 
-   if (product) {
-     if (isAdmin) {
-       // Admin puede ver stock total
-       availableStock = product.stock || 0;
-     } else if (userRole === 'cashier' && userBranchId) {
-       // Cajeros solo ven stock de su sucursal
-       if (product.stockBySucursal && product.stockBySucursal[userBranchId] !== undefined) {
-         availableStock = product.stockBySucursal[userBranchId];
-       } else {
-         // Si no hay stock específico para esta sucursal, mostrar alerta
-         alert('Este producto no tiene stock asignado a tu sucursal. Contacta al administrador.');
-         return;
-       }
-     } else {
-       alert('Error: No se pudo determinar el stock disponible. Verifica tu rol y sucursal asignada.');
-       return;
-     }
-   }
+    if (product) {
+      if (isAdmin) {
+        // Admin puede ver stock total
+        availableStock = product.stock || 0;
+      } else if (userRole === 'cashier' && userBranchId) {
+        // Cajeros solo ven stock de su sucursal
+        if (product.stockBySucursal && product.stockBySucursal[userBranchId] !== undefined) {
+          availableStock = product.stockBySucursal[userBranchId];
+        } else {
+          // Si no hay stock específico para esta sucursal, mostrar alerta
+          alert('Este producto no tiene stock asignado a tu sucursal. Contacta al administrador.');
+          return;
+        }
+      } else {
+        alert('Error: No se pudo determinar el stock disponible. Verifica tu rol y sucursal asignada.');
+        return;
+      }
+    }
 
 
-   if (product && quantity > 0 && quantity <= availableStock && finalPrice > 0) {
-     const existingItemIndex = saleDetails.findIndex(item => item._id === product._id);
-     if (existingItemIndex > -1) {
-       const updatedDetails = [...saleDetails];
-       const existingItem = updatedDetails[existingItemIndex];
-       const newQuantity = existingItem.quantity + quantity;
-       if (newQuantity > availableStock) {
-         alert(`No hay suficiente stock para la cantidad total solicitada (${newQuantity} > ${availableStock}). Stock disponible en tu sucursal: ${availableStock}`);
-         return;
-       }
-       updatedDetails[existingItemIndex] = {
-         ...existingItem,
-         quantity: newQuantity,
-         subtotal: finalPrice * newQuantity,
-       };
-       setModuleState(prev => ({ ...prev, saleDetails: updatedDetails }));
-     } else {
-       setModuleState(prev => ({
-         ...prev,
-         saleDetails: [...prev.saleDetails, {
-           _id: product._id || product.id, // Asegurar que _id esté disponible
-           productId: product._id || product.id, // Campo adicional para compatibilidad
-           name: product.name,
-           quantity,
-           price: finalPrice,
-           subtotal: finalPrice * quantity
-         }],
-       }));
-     }
-     setModuleState(prev => ({ ...prev, selectedProduct: '', quantity: 1, priceOverride: '' }));
-   } else {
-     let errorMsg = 'Cantidad, precio o stock inválido.';
-     if (quantity > availableStock) {
-       errorMsg += ` Stock disponible en tu sucursal: ${availableStock}`;
-     }
-     alert(errorMsg);
-   }
- }, [products, selectedProduct, priceOverride, isAdmin, userRole, userBranchId, quantity, saleDetails, setModuleState]);
+    if (product && quantity > 0 && quantity <= availableStock && finalPrice > 0) {
+      const existingItemIndex = saleDetails.findIndex(item => item._id === product._id);
+      if (existingItemIndex > -1) {
+        const updatedDetails = [...saleDetails];
+        const existingItem = updatedDetails[existingItemIndex];
+        const newQuantity = existingItem.quantity + quantity;
+        if (newQuantity > availableStock) {
+          alert(`No hay suficiente stock para la cantidad total solicitada (${newQuantity} > ${availableStock}). Stock disponible en tu sucursal: ${availableStock}`);
+          return;
+        }
+        updatedDetails[existingItemIndex] = {
+          ...existingItem,
+          quantity: newQuantity,
+          subtotal: finalPrice * newQuantity,
+        };
+        setModuleState(prev => ({ ...prev, saleDetails: updatedDetails }));
+      } else {
+        setModuleState(prev => ({
+          ...prev,
+          saleDetails: [...prev.saleDetails, {
+            _id: product._id || product.id, // Asegurar que _id esté disponible
+            productId: product._id || product.id, // Campo adicional para compatibilidad
+            name: product.name,
+            quantity,
+            price: finalPrice,
+            subtotal: finalPrice * quantity
+          }],
+        }));
+      }
+      setModuleState(prev => ({ ...prev, selectedProduct: '', quantity: 1, priceOverride: '' }));
+    } else {
+      let errorMsg = 'Cantidad, precio o stock inválido.';
+      if (quantity > availableStock) {
+        errorMsg += ` Stock disponible en tu sucursal: ${availableStock}`;
+      }
+      alert(errorMsg);
+    }
+  }, [products, selectedProduct, priceOverride, isAdmin, userRole, userBranchId, quantity, saleDetails, setModuleState]);
 
   const handleRemoveProductFromSale = useCallback((productId) => {
     setModuleState(prev => {
@@ -322,107 +322,70 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
     });
   }, [setModuleState]);
 
-   const handleConfirmSale = async () => {
-       if (!selectedPerson || saleDetails.length === 0) {
-         alert('Por favor, selecciona un cliente y agrega al menos un producto.');
-         return;
-       }
+  const handleConfirmSale = async () => {
+    if (!selectedPerson || saleDetails.length === 0) {
+      alert('Por favor, selecciona un cliente y agrega al menos un producto.');
+      return;
+    }
 
-       // Prevenir clics múltiples
-       if (isProcessingSale) {
-         return;
-       }
+    // Prevenir clics múltiples
+    if (isProcessingSale) {
+      return;
+    }
 
-       // Ocultar el botón inmediatamente al presionar
-       setShowConfirmButton(false);
-       setIsConfirmingSale(true);
-       setIsProcessingSale(true);
+    // Ocultar el botón inmediatamente al presionar
+    setShowConfirmButton(false);
+    setIsConfirmingSale(true);
+    setIsProcessingSale(true);
 
-      const total = saleDetails.reduce((sum, item) => sum + item.subtotal, 0);
+    const total = saleDetails.reduce((sum, item) => sum + item.subtotal, 0);
 
 
-      // Validar sucursal según el rol del usuario
-      let currentBranch;
-      if (isAdmin) {
-        // Admin debe seleccionar una sucursal
-        if (!selectedBranch) {
-          alert('Por favor, selecciona una sucursal para la venta desde el selector superior.');
-          // Resetear estado si hay error
-          setShowConfirmButton(true);
-          setIsConfirmingSale(false);
-          return;
-        }
-        currentBranch = selectedBranch;
-      } else {
-        // Cajeros usan su sucursal asignada automáticamente
-        if (!userBranchId) {
-          console.error('❌ Cajero sin branchId:', userBranchId);
-          alert('Error: No tienes una sucursal asignada. Contacta al administrador para asignarte una sucursal.');
-          // Resetear estado si hay error
-          setShowConfirmButton(true);
-          setIsConfirmingSale(false);
-          return;
-        }
-        currentBranch = userBranchId;
+    // Validar sucursal según el rol del usuario
+    let currentBranch;
+    if (isAdmin) {
+      // Admin debe seleccionar una sucursal
+      if (!selectedBranch) {
+        alert('Por favor, selecciona una sucursal para la venta desde el selector superior.');
+        // Resetear estado si hay error
+        setShowConfirmButton(true);
+        setIsConfirmingSale(false);
+        return;
       }
-
-      // Validar monto recibido según el método de pago
-      let receivedAmount = 0;
-      let change = 0;
-
-      // --- SOLUCIÓN: Forzar valores numéricos para pagos mixtos ---
-      let safeCashAmount = 0;
-      let safeCardAmount = 0;
-      if (paymentMethod === 'mixto') {
-        safeCashAmount = parseFloat(cashAmount) || 0;
-        safeCardAmount = parseFloat(cardAmount) || 0;
+      currentBranch = selectedBranch;
+    } else {
+      // Cajeros usan su sucursal asignada automáticamente
+      if (!userBranchId) {
+        console.error('❌ Cajero sin branchId:', userBranchId);
+        alert('Error: No tienes una sucursal asignada. Contacta al administrador para asignarte una sucursal.');
+        // Resetear estado si hay error
+        setShowConfirmButton(true);
+        setIsConfirmingSale(false);
+        return;
       }
+      currentBranch = userBranchId;
+    }
 
-      if (paymentMethod === 'tarjeta') {
-        // Para pagos con tarjeta, no se requiere monto recibido
-        receivedAmount = total; // Se considera que se recibió el total
-        change = 0;
-      } else if (paymentMethod === 'efectivo') {
-        // Para pagos en efectivo, validar que el monto recibido sea obligatorio y suficiente
-        if (!amountReceived || amountReceived.trim() === '' || isNaN(parseFloat(amountReceived))) {
-          alert('Por favor, ingresa el monto recibido. Este campo es obligatorio para pagos en efectivo.');
-          // Resetear estado si hay error
-          setShowConfirmButton(true);
-          setIsConfirmingSale(false);
-          setIsProcessingSale(false);
-          return;
-        }
+    // Validar monto recibido según el método de pago
+    let receivedAmount = 0;
+    let change = 0;
 
-        receivedAmount = parseFloat(amountReceived);
-        if (receivedAmount < total) {
-          alert(`El monto recibido (₲${receivedAmount.toLocaleString()}) es insuficiente. Debe ser al menos ₲${total.toLocaleString()}.`);
-          // Resetear estado si hay error
-          setShowConfirmButton(true);
-          setIsConfirmingSale(false);
-          setIsProcessingSale(false);
-          return;
-        }
-        change = receivedAmount - total;
-      } else if (paymentMethod === 'mixto') {
-        // Validar que la suma de montos sea igual al total
-        const totalMixto = safeCashAmount + safeCardAmount;
-        if (totalMixto !== total) {
-          alert(`La suma de efectivo (₲${safeCashAmount}) y tarjeta (₲${safeCardAmount}) debe ser igual al total (₲${total.toLocaleString()}).`);
-          // Resetear estado si hay error
-          setShowConfirmButton(true);
-          setIsConfirmingSale(false);
-          setIsProcessingSale(false);
-          return;
-        }
-        receivedAmount = safeCashAmount; // Para compatibilidad
-        change = 0;
-      }
+    // --- SOLUCIÓN: Forzar valores numéricos para pagos mixtos ---
+    let safeCashAmount = 0;
+    let safeCardAmount = 0;
+    if (paymentMethod === 'mixto') {
+      safeCashAmount = parseFloat(cashAmount) || 0;
+      safeCardAmount = parseFloat(cardAmount) || 0;
+    }
 
-      // Obtener userId del currentUser prop (no localStorage)
-      const userId = currentUser._id || currentUser.id;
-      if (!userId) {
-        console.error('❌ No se pudo obtener userId del currentUser');
-        alert('Error interno: No se pudo identificar el usuario. Refresca la página e inicia sesión nuevamente.');
+    if (paymentMethod === 'tarjeta') {
+      // Para pagos con tarjeta, no se requiere monto recibido
+      receivedAmount = total; // Se considera que se recibió el total
+      change = 0;
+    } else if (paymentMethod === 'efectivo') {
+      // Para pagos en efectivo, validar que el monto recibido sea obligatorio y suficiente
+      if (!amountReceived || amountReceived.trim() === '' || isNaN(parseFloat(amountReceived))) {
+        alert('Por favor, ingresa el monto recibido. Este campo es obligatorio para pagos en efectivo.');
         // Resetear estado si hay error
         setShowConfirmButton(true);
         setIsConfirmingSale(false);
@@ -430,86 +393,123 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
         return;
       }
 
-      // Crear objeto de venta con usuario actual garantizado
-      const newSale = {
-        personId: selectedPerson,
-        cashierId: userId,
-        branchId: currentBranch,
-        // Enviar timestamp completo en ISO para preservar hora y zona (evita 'YYYY-MM-DD' que se interpreta como UTC midnight)
-        date: new Date().toISOString(),
-        details: saleDetails.map(item => ({
-          productId: item._id || item.productId, // Usar _id o productId según esté disponible
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          subtotal: item.subtotal
-        })),
-        total,
-        paymentMethod,
-        amountReceived: paymentMethod === 'tarjeta' ? null : receivedAmount,
-        change: paymentMethod === 'tarjeta' ? 0 : change,
-        // --- SOLUCIÓN: Usar los valores seguros ---
-        cashAmount: paymentMethod === 'mixto' ? safeCashAmount : null,
-        cardAmount: paymentMethod === 'mixto' ? safeCardAmount : null,
-        // Asegurar que userId sea exactamente el del usuario logueado
-        userId: userId,
-        // Agregar información adicional del usuario para debugging
-        userInfo: {
-          id: userId,
-          name: currentUser.name,
-          username: currentUser.username,
-          role: userRole
-        }
-      };
+      receivedAmount = parseFloat(amountReceived);
+      if (receivedAmount < total) {
+        alert(`El monto recibido (₲${receivedAmount.toLocaleString()}) es insuficiente. Debe ser al menos ₲${total.toLocaleString()}.`);
+        // Resetear estado si hay error
+        setShowConfirmButton(true);
+        setIsConfirmingSale(false);
+        setIsProcessingSale(false);
+        return;
+      }
+      change = receivedAmount - total;
+    } else if (paymentMethod === 'mixto') {
+      // Validar que la suma de montos sea igual al total
+      const totalMixto = safeCashAmount + safeCardAmount;
+      if (totalMixto !== total) {
+        alert(`La suma de efectivo (₲${safeCashAmount}) y tarjeta (₲${safeCardAmount}) debe ser igual al total (₲${total.toLocaleString()}).`);
+        // Resetear estado si hay error
+        setShowConfirmButton(true);
+        setIsConfirmingSale(false);
+        setIsProcessingSale(false);
+        return;
+      }
+      receivedAmount = safeCashAmount; // Para compatibilidad
+      change = 0;
+    }
+
+    // Obtener userId del currentUser prop (no localStorage)
+    const userId = currentUser._id || currentUser.id;
+    if (!userId) {
+      console.error('❌ No se pudo obtener userId del currentUser');
+      alert('Error interno: No se pudo identificar el usuario. Refresca la página e inicia sesión nuevamente.');
+      // Resetear estado si hay error
+      setShowConfirmButton(true);
+      setIsConfirmingSale(false);
+      setIsProcessingSale(false);
+      return;
+    }
+
+    // Crear objeto de venta con usuario actual garantizado
+    const newSale = {
+      personId: selectedPerson,
+      cashierId: userId,
+      branchId: currentBranch,
+      // Enviar timestamp completo en ISO para preservar hora y zona (evita 'YYYY-MM-DD' que se interpreta como UTC midnight)
+      date: new Date().toISOString(),
+      details: saleDetails.map(item => ({
+        productId: item._id || item.productId, // Usar _id o productId según esté disponible
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        subtotal: item.subtotal
+      })),
+      total,
+      paymentMethod,
+      amountReceived: paymentMethod === 'tarjeta' ? null : receivedAmount,
+      change: paymentMethod === 'tarjeta' ? 0 : change,
+      // --- SOLUCIÓN: Usar los valores seguros ---
+      cashAmount: paymentMethod === 'mixto' ? safeCashAmount : null,
+      cardAmount: paymentMethod === 'mixto' ? safeCardAmount : null,
+      // Asegurar que userId sea exactamente el del usuario logueado
+      userId: userId,
+      // Agregar información adicional del usuario para debugging
+      userInfo: {
+        id: userId,
+        name: currentUser.name,
+        username: currentUser.username,
+        role: userRole
+      }
+    };
 
 
 
 
-      try {
-        // Esperar el resultado de onAddSale
-        const result = await onAddSale(newSale, currentBranch, saleDetails);
+    try {
+      // Esperar el resultado de onAddSale
+      const result = await onAddSale(newSale, currentBranch, saleDetails);
 
-        if (result && result.success) {
-          // Solo limpiar el estado y mostrar ticket si la venta fue exitosa
-          setModuleState({
-            selectedPerson: '',
-            selectedProduct: '',
-            quantity: 1,
-            priceOverride: '',
-            paymentMethod: 'efectivo',
-            saleDetails: [],
-            amountReceived: '',
-          });
+      if (result && result.success) {
+        // Solo limpiar el estado y mostrar ticket si la venta fue exitosa
+        setModuleState({
+          selectedPerson: '',
+          selectedProduct: '',
+          quantity: 1,
+          priceOverride: '',
+          paymentMethod: 'efectivo',
+          saleDetails: [],
+          amountReceived: '',
+        });
 
-          // Mostrar mensaje de éxito
-          alert(result.message || 'Venta guardada exitosamente!');
+        // Mostrar mensaje de éxito
+        alert(result.message || 'Venta guardada exitosamente!');
 
-          // Mostrar el ticket con los datos de la venta guardada
-          setCurrentSaleTicket(result.sale || newSale);
-          setShowTicketModal(true);
+        // Mostrar el ticket con los datos de la venta guardada
+        setCurrentSaleTicket(result.sale || newSale);
+        setShowTicketModal(true);
 
-          // Mantener el botón oculto hasta que se cierre el ticket
-          setIsProcessingSale(false);
-        } else {
-          // Si la venta falló, mostrar el error y NO limpiar el estado
-          const errorMessage = result?.error || 'Error desconocido al guardar la venta';
-          alert(`Error al guardar la venta: ${errorMessage}`);
-          console.error('Error en venta:', errorMessage);
-          // Resetear estado si hay error
-          setShowConfirmButton(true);
-          setIsConfirmingSale(false);
-          setIsProcessingSale(false);
-        }
-      } catch (error) {
-        // Manejar errores inesperados
-        console.error('Error inesperado en handleConfirmSale:', error);
-        alert('Error inesperado al procesar la venta. Por favor, intenta nuevamente.');
+        // Mantener el botón oculto hasta que se cierre el ticket
+        setIsProcessingSale(false);
+      } else {
+        // Si la venta falló, mostrar el error y NO limpiar el estado
+        const errorMessage = result?.error || 'Error desconocido al guardar la venta';
+        alert(`Error al guardar la venta: ${errorMessage}`);
+        console.error('Error en venta:', errorMessage);
         // Resetear estado si hay error
         setShowConfirmButton(true);
         setIsConfirmingSale(false);
         setIsProcessingSale(false);
       }
-    };
+    } catch (error) {
+      // Manejar errores inesperados
+      console.error('Error inesperado en handleConfirmSale:', error);
+      alert('Error inesperado al procesar la venta. Por favor, intenta nuevamente.');
+      // Resetear estado si hay error
+      setShowConfirmButton(true);
+      setIsConfirmingSale(false);
+      setIsProcessingSale(false);
+    }
+  };
 
   const handleClearSale = () => {
     setModuleState({
@@ -596,9 +596,9 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
       alert('Por favor, selecciona un cliente y agrega al menos un producto.');
       return;
     }
-    
+
     const total = saleDetails.reduce((sum, item) => sum + item.subtotal, 0);
-    
+
     // Validar monto recibido según el método de pago para edición
     let receivedAmount = 0;
     let change = 0;
@@ -649,7 +649,7 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
       cashAmount: paymentMethod === 'mixto' ? Number(safeCashAmount) || 0 : null,
       cardAmount: paymentMethod === 'mixto' ? Number(safeCardAmount) || 0 : null,
     };
-    
+
     try {
       // Pasar la contraseña de administrador verificada al handler de edición
       const maybePromise = onEditSale(updatedSale, verifiedAdminPassword);
@@ -676,7 +676,7 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
     } catch (err) {
       console.warn('Error ejecutando onReloadData tras editar venta:', err);
     }
-    
+
     // Limpiar estado
     setModuleState({
       selectedPerson: '',
@@ -881,753 +881,762 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
   }, [onReloadData]);
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto my-8">
+    <div
+      className="h-full flex flex-col relative p-4"
+      style={{
+        backgroundImage: 'url(/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
 
-      <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">
-        Módulo de Ventas
-        {isEditing && (
-          <span className="block text-2xl text-blue-600 mt-2">
-            ✏️ Editando Venta: {editingSale?.id}
-          </span>
-        )}
-      </h2>
+      <div className="relative bg-white bg-opacity-95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto z-10 h-full overflow-auto w-full">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
-          <label htmlFor="person" className="block text-gray-700 text-lg font-medium mb-2">
-            Cliente:
-          </label>
-          <Select
-            value={filteredPersons.filter(p => p.type === 'cliente').find(person => person._id === selectedPerson) ? { value: selectedPerson, label: filteredPersons.find(p => p._id === selectedPerson)?.name } : null}
-            onChange={(selectedOption) => setModuleState(prev => ({ ...prev, selectedPerson: selectedOption ? selectedOption.value : '' }))}
-            options={filteredPersons.filter(p => p.type === 'cliente').map(person => ({ value: person._id, label: person.name }))}
-            placeholder="Selecciona un cliente"
-            isClearable
-            className="react-select-container"
-            classNamePrefix="react-select"
-            styles={{
-              control: (provided) => ({
-                ...provided,
-                borderRadius: '0.75rem',
-                borderColor: '#d1d5db',
-                boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                fontSize: '1.125rem',
-                '&:hover': {
-                  borderColor: '#10b981',
-                },
-                '&:focus-within': {
-                  borderColor: '#10b981',
-                  boxShadow: '0 0 0 3px rgb(16 185 129 / 0.1)',
-                },
-              }),
-              option: (provided, state) => ({
-                ...provided,
-                backgroundColor: state.isSelected ? '#10b981' : state.isFocused ? '#f3f4f6' : 'white',
-                color: state.isSelected ? 'white' : '#374151',
-                fontSize: '1.125rem',
-              }),
-              placeholder: (provided) => ({
-                ...provided,
-                fontSize: '1.125rem',
-              }),
-              singleValue: (provided) => ({
-                ...provided,
-                fontSize: '1.125rem',
-              }),
-            }}
-          />
-        </div>
+        <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">
+          Módulo de Ventas
+          {isEditing && (
+            <span className="block text-2xl text-blue-600 mt-2">
+              ✏️ Editando Venta: {editingSale?.id}
+            </span>
+          )}
+        </h2>
 
-        {/* Selector de sucursal para admin */}
-        {currentUser && currentUser.role === 'admin' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
-            <label htmlFor="branchSelect" className="block text-gray-700 text-lg font-medium mb-2">
-              Sucursal:
+            <label htmlFor="person" className="block text-gray-700 text-lg font-medium mb-2">
+              Cliente:
+            </label>
+            <Select
+              value={filteredPersons.filter(p => p.type === 'cliente').find(person => person._id === selectedPerson) ? { value: selectedPerson, label: filteredPersons.find(p => p._id === selectedPerson)?.name } : null}
+              onChange={(selectedOption) => setModuleState(prev => ({ ...prev, selectedPerson: selectedOption ? selectedOption.value : '' }))}
+              options={filteredPersons.filter(p => p.type === 'cliente').map(person => ({ value: person._id, label: person.name }))}
+              placeholder="Selecciona un cliente"
+              isClearable
+              className="react-select-container"
+              classNamePrefix="react-select"
+              styles={{
+                control: (provided) => ({
+                  ...provided,
+                  borderRadius: '0.75rem',
+                  borderColor: '#d1d5db',
+                  boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                  fontSize: '1.125rem',
+                  '&:hover': {
+                    borderColor: '#10b981',
+                  },
+                  '&:focus-within': {
+                    borderColor: '#10b981',
+                    boxShadow: '0 0 0 3px rgb(16 185 129 / 0.1)',
+                  },
+                }),
+                option: (provided, state) => ({
+                  ...provided,
+                  backgroundColor: state.isSelected ? '#10b981' : state.isFocused ? '#f3f4f6' : 'white',
+                  color: state.isSelected ? 'white' : '#374151',
+                  fontSize: '1.125rem',
+                }),
+                placeholder: (provided) => ({
+                  ...provided,
+                  fontSize: '1.125rem',
+                }),
+                singleValue: (provided) => ({
+                  ...provided,
+                  fontSize: '1.125rem',
+                }),
+              }}
+            />
+          </div>
+
+          {/* Selector de sucursal para admin */}
+          {currentUser && currentUser.role === 'admin' && (
+            <div>
+              <label htmlFor="branchSelect" className="block text-gray-700 text-lg font-medium mb-2">
+                Sucursal:
+              </label>
+              <select
+                id="branchSelect"
+                value={selectedBranch || ''}
+                disabled
+                className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm bg-gray-100 text-gray-500 text-lg cursor-not-allowed"
+              >
+                <option value="">
+                  {selectedBranch ? branches.find(b => b._id === selectedBranch)?.name : 'Selecciona una sucursal desde arriba'}
+                </option>
+                {branches.map(branch => (
+                  <option key={branch._id} value={branch._id}>{branch.name}</option>
+                ))}
+              </select>
+              <p className="text-sm text-blue-600 mt-2">
+                💡 Cambia la sucursal usando el selector en la parte superior de la página
+              </p>
+              {selectedBranch && (
+                <p className="text-sm text-green-600 mt-1">
+                  ✅ Mostrando personas y productos de: <strong>{branches.find(b => b._id === selectedBranch)?.name}</strong>
+                </p>
+              )}
+            </div>
+          )}
+          <div>
+            <label htmlFor="product" className="block text-gray-700 text-lg font-medium mb-2">
+              Producto:
+            </label>
+            <Select
+              value={filteredProducts.find(product => product._id === selectedProduct) ? (() => {
+                const product = filteredProducts.find(p => p._id === selectedProduct);
+                let displayStock = product.stock;
+                if (!isAdmin && userBranchId) {
+                  displayStock = product.stockBySucursal?.[userBranchId] || 0;
+                }
+                return { value: product._id, label: `${product.name} - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}` };
+              })() : null}
+              onChange={(selectedOption) => {
+                const productId = selectedOption ? selectedOption.value : '';
+                const product = products.find(p => p._id === productId);
+                setModuleState(prev => ({
+                  ...prev,
+                  selectedProduct: productId,
+                  priceOverride: product ? product.price.toString() : '',
+                }));
+              }}
+              options={filteredProducts.map(product => {
+                // Determinar el stock a mostrar según el rol del usuario actual
+                let displayStock = product.stock;
+                if (!isAdmin && userBranchId) {
+                  displayStock = product.stockBySucursal?.[userBranchId] || 0;
+                }
+                return {
+                  value: product._id,
+                  label: `${product.name} - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}`
+                };
+              })}
+              placeholder="Selecciona un producto"
+              isClearable
+              className="react-select-container"
+              classNamePrefix="react-select"
+              styles={{
+                control: (provided) => ({
+                  ...provided,
+                  borderRadius: '0.75rem',
+                  borderColor: '#d1d5db',
+                  boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                  fontSize: '1.125rem',
+                  '&:hover': {
+                    borderColor: '#10b981',
+                  },
+                  '&:focus-within': {
+                    borderColor: '#10b981',
+                    boxShadow: '0 0 0 3px rgb(16 185 129 / 0.1)',
+                  },
+                }),
+                option: (provided, state) => ({
+                  ...provided,
+                  backgroundColor: state.isSelected ? '#10b981' : state.isFocused ? '#f3f4f6' : 'white',
+                  color: state.isSelected ? 'white' : '#374151',
+                  fontSize: '1.125rem',
+                }),
+                placeholder: (provided) => ({
+                  ...provided,
+                  fontSize: '1.125rem',
+                }),
+                singleValue: (provided) => ({
+                  ...provided,
+                  fontSize: '1.125rem',
+                }),
+              }}
+            />
+          </div>
+          <div>
+            <label htmlFor="quantity" className="block text-gray-700 text-lg font-medium mb-2">
+              Cantidad:
+            </label>
+            <input
+              type="number"
+              id="quantity"
+              value={quantity}
+              onChange={(e) => setModuleState(prev => ({ ...prev, quantity: parseInt(e.target.value, 10) }))}
+              min="1"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
+            />
+          </div>
+          <div>
+            <label htmlFor="priceOverride" className="block text-gray-700 text-lg font-medium mb-2">
+              Precio Unitario (₲):
+            </label>
+            <input
+              type="number"
+              id="priceOverride"
+              value={priceOverride}
+              onChange={(e) => setModuleState(prev => ({ ...prev, priceOverride: e.target.value }))}
+              step="0.01"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
+            />
+          </div>
+          <div>
+            <label htmlFor="paymentMethod" className="block text-gray-700 text-lg font-medium mb-2">
+              Método de Pago:
             </label>
             <select
-              id="branchSelect"
-              value={selectedBranch || ''}
-              disabled
-              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm bg-gray-100 text-gray-500 text-lg cursor-not-allowed"
+              id="paymentMethod"
+              value={paymentMethod}
+              onChange={handlePaymentMethodChange}
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg bg-white"
             >
-              <option value="">
-                {selectedBranch ? branches.find(b => b._id === selectedBranch)?.name : 'Selecciona una sucursal desde arriba'}
-              </option>
-              {branches.map(branch => (
-                <option key={branch._id} value={branch._id}>{branch.name}</option>
-              ))}
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="mixto">Mixto (Efectivo + Tarjeta)</option>
             </select>
-            <p className="text-sm text-blue-600 mt-2">
-              💡 Cambia la sucursal usando el selector en la parte superior de la página
+          </div>
+          <div>
+            <label htmlFor="amountReceived" className="block text-gray-700 text-lg font-medium mb-2">
+              Monto Recibido (₲): {paymentMethod === 'efectivo' ? '*' : '(Opcional)'}
+            </label>
+            <input
+              type="number"
+              id="amountReceived"
+              value={amountReceived}
+              onChange={(e) => setModuleState(prev => ({ ...prev, amountReceived: e.target.value }))}
+              step="0.01"
+              required={paymentMethod === 'efectivo'}
+              disabled={paymentMethod === 'tarjeta'}
+              className={`w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 ${paymentMethod === 'tarjeta' ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              {paymentMethod === 'efectivo'
+                ? '* Campo obligatorio para pagos en efectivo'
+                : paymentMethod === 'mixto'
+                  ? 'Para pagos mixtos, ingresa los montos en efectivo y tarjeta abajo'
+                  : 'Para pagos con tarjeta, este campo se completa automáticamente'
+              }
             </p>
-            {selectedBranch && (
-              <p className="text-sm text-green-600 mt-1">
-                ✅ Mostrando personas y productos de: <strong>{branches.find(b => b._id === selectedBranch)?.name}</strong>
-              </p>
+          </div>
+          {paymentMethod === 'mixto' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="cashAmount" className="block text-gray-700 text-lg font-medium mb-2">
+                  Monto Efectivo (₲): *
+                </label>
+                <input
+                  type="number"
+                  id="cashAmount"
+                  value={cashAmount}
+                  onChange={(e) => setModuleState(prev => ({ ...prev, cashAmount: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 }))}
+                  step="0.01"
+                  min="0"
+                  className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="cardAmount" className="block text-gray-700 text-lg font-medium mb-2">
+                  Monto Tarjeta (₲): *
+                </label>
+                <input
+                  type="number"
+                  id="cardAmount"
+                  value={cardAmount}
+                  onChange={(e) => setModuleState(prev => ({ ...prev, cardAmount: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 }))}
+                  step="0.01"
+                  min="0"
+                  className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
+                  required
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex items-end space-x-4">
+            <button
+              onClick={handleAddProductToSale}
+              className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Agregar al Carrito
+            </button>
+            <button
+              onClick={handleClearSale}
+              className="w-full px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Limpiar
+            </button>
+          </div>
+        </div>
+
+        {saleDetails.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">Detalle de la Venta Actual:</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-xl overflow-hidden">
+                <thead className="bg-gray-100 border-b-2 border-gray-200">
+                  <tr>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Producto</th>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Precio Unitario</th>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Cantidad</th>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Subtotal</th>
+                    <th className="py-3 px-5 text-center text-md font-semibold text-gray-700">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(saleDetails || []).map(item => (
+                    <tr key={item._id || item.productId || item.id || Math.random()} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
+                      <td className="py-3 px-5 text-md text-gray-800">{item.name}</td>
+                      <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.price)}</td>
+                      <td className="py-3 px-5 text-md text-gray-800">{item.quantity}</td>
+                      <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.subtotal)}</td>
+                      <td className="py-3 px-5 flex justify-center">
+                        <button
+                          onClick={() => handleRemoveProductFromSale(item._id || item.productId || item.id)}
+                          className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="text-right text-2xl font-bold text-gray-900 mt-6">
+              Total: {formatGuarani(totalSaleAmount)}
+            </div>
+            {paymentMethod === 'efectivo' && amountReceived !== '' && !isNaN(parseFloat(amountReceived)) && (
+              <div className="text-right text-xl font-semibold text-gray-700 mt-2">
+                Monto Recibido: {formatGuarani(parseFloat(amountReceived))}
+                <br />
+                Vuelto: {formatGuarani(changeAmount)}
+              </div>
+            )}
+            {paymentMethod === 'tarjeta' && (
+              <div className="text-right text-xl font-semibold text-blue-600 mt-2">
+                💳 Pago con tarjeta - Procesado automáticamente
+              </div>
             )}
           </div>
         )}
-        <div>
-          <label htmlFor="product" className="block text-gray-700 text-lg font-medium mb-2">
-            Producto:
-          </label>
-          <Select
-            value={filteredProducts.find(product => product._id === selectedProduct) ? (() => {
-              const product = filteredProducts.find(p => p._id === selectedProduct);
-              let displayStock = product.stock;
-              if (!isAdmin && userBranchId) {
-                displayStock = product.stockBySucursal?.[userBranchId] || 0;
-              }
-              return { value: product._id, label: `${product.name} - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}` };
-            })() : null}
-            onChange={(selectedOption) => {
-              const productId = selectedOption ? selectedOption.value : '';
-              const product = products.find(p => p._id === productId);
-              setModuleState(prev => ({
-                ...prev,
-                selectedProduct: productId,
-                priceOverride: product ? product.price.toString() : '',
-              }));
-            }}
-            options={filteredProducts.map(product => {
-              // Determinar el stock a mostrar según el rol del usuario actual
-              let displayStock = product.stock;
-              if (!isAdmin && userBranchId) {
-                displayStock = product.stockBySucursal?.[userBranchId] || 0;
-              }
-              return {
-                value: product._id,
-                label: `${product.name} - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}`
-              };
-            })}
-            placeholder="Selecciona un producto"
-            isClearable
-            className="react-select-container"
-            classNamePrefix="react-select"
-            styles={{
-              control: (provided) => ({
-                ...provided,
-                borderRadius: '0.75rem',
-                borderColor: '#d1d5db',
-                boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                fontSize: '1.125rem',
-                '&:hover': {
-                  borderColor: '#10b981',
-                },
-                '&:focus-within': {
-                  borderColor: '#10b981',
-                  boxShadow: '0 0 0 3px rgb(16 185 129 / 0.1)',
-                },
-              }),
-              option: (provided, state) => ({
-                ...provided,
-                backgroundColor: state.isSelected ? '#10b981' : state.isFocused ? '#f3f4f6' : 'white',
-                color: state.isSelected ? 'white' : '#374151',
-                fontSize: '1.125rem',
-              }),
-              placeholder: (provided) => ({
-                ...provided,
-                fontSize: '1.125rem',
-              }),
-              singleValue: (provided) => ({
-                ...provided,
-                fontSize: '1.125rem',
-              }),
-            }}
-          />
-        </div>
-        <div>
-          <label htmlFor="quantity" className="block text-gray-700 text-lg font-medium mb-2">
-            Cantidad:
-          </label>
-          <input
-            type="number"
-            id="quantity"
-            value={quantity}
-            onChange={(e) => setModuleState(prev => ({ ...prev, quantity: parseInt(e.target.value, 10) }))}
-            min="1"
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
-          />
-        </div>
-        <div>
-          <label htmlFor="priceOverride" className="block text-gray-700 text-lg font-medium mb-2">
-            Precio Unitario (₲):
-          </label>
-          <input
-            type="number"
-            id="priceOverride"
-            value={priceOverride}
-            onChange={(e) => setModuleState(prev => ({ ...prev, priceOverride: e.target.value }))}
-            step="0.01"
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
-          />
-        </div>
-        <div>
-          <label htmlFor="paymentMethod" className="block text-gray-700 text-lg font-medium mb-2">
-            Método de Pago:
-          </label>
-          <select
-            id="paymentMethod"
-            value={paymentMethod}
-            onChange={handlePaymentMethodChange}
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg bg-white"
-          >
-            <option value="efectivo">Efectivo</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="mixto">Mixto (Efectivo + Tarjeta)</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="amountReceived" className="block text-gray-700 text-lg font-medium mb-2">
-            Monto Recibido (₲): {paymentMethod === 'efectivo' ? '*' : '(Opcional)'}
-          </label>
-          <input
-            type="number"
-            id="amountReceived"
-            value={amountReceived}
-            onChange={(e) => setModuleState(prev => ({ ...prev, amountReceived: e.target.value }))}
-            step="0.01"
-            required={paymentMethod === 'efectivo'}
-            disabled={paymentMethod === 'tarjeta'}
-            className={`w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 ${
-              paymentMethod === 'tarjeta' ? 'bg-gray-100 cursor-not-allowed' : ''
-            }`}
-          />
-          <p className="text-sm text-gray-500 mt-1">
-            {paymentMethod === 'efectivo'
-              ? '* Campo obligatorio para pagos en efectivo'
-              : paymentMethod === 'mixto'
-              ? 'Para pagos mixtos, ingresa los montos en efectivo y tarjeta abajo'
-              : 'Para pagos con tarjeta, este campo se completa automáticamente'
-            }
-          </p>
-        </div>
-        {paymentMethod === 'mixto' && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="cashAmount" className="block text-gray-700 text-lg font-medium mb-2">
-                Monto Efectivo (₲): *
-              </label>
-              <input
-                type="number"
-                id="cashAmount"
-                value={cashAmount}
-                onChange={(e) => setModuleState(prev => ({ ...prev, cashAmount: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 }))}
-                step="0.01"
-                min="0"
-                className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="cardAmount" className="block text-gray-700 text-lg font-medium mb-2">
-                Monto Tarjeta (₲): *
-              </label>
-              <input
-                type="number"
-                id="cardAmount"
-                value={cardAmount}
-                onChange={(e) => setModuleState(prev => ({ ...prev, cardAmount: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 }))}
-                step="0.01"
-                min="0"
-                className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 text-lg"
-                required
-              />
-            </div>
-          </div>
-        )}
-        <div className="flex items-end space-x-4">
-          <button
-            onClick={handleAddProductToSale}
-            className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Agregar al Carrito
-          </button>
-          <button
-            onClick={handleClearSale}
-            className="w-full px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            Limpiar
-          </button>
-        </div>
-      </div>
 
-      {saleDetails.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Detalle de la Venta Actual:</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-xl overflow-hidden">
-              <thead className="bg-gray-100 border-b-2 border-gray-200">
-                <tr>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Producto</th>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Precio Unitario</th>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Cantidad</th>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Subtotal</th>
-                  <th className="py-3 px-5 text-center text-md font-semibold text-gray-700">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(saleDetails || []).map(item => (
-                  <tr key={item._id || item.productId || item.id || Math.random()} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
-                    <td className="py-3 px-5 text-md text-gray-800">{item.name}</td>
-                    <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.price)}</td>
-                    <td className="py-3 px-5 text-md text-gray-800">{item.quantity}</td>
-                    <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.subtotal)}</td>
-                    <td className="py-3 px-5 flex justify-center">
-                      <button
-                        onClick={() => handleRemoveProductFromSale(item._id || item.productId || item.id)}
-                        className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="text-right text-2xl font-bold text-gray-900 mt-6">
-            Total: {formatGuarani(totalSaleAmount)}
-          </div>
-          {paymentMethod === 'efectivo' && amountReceived !== '' && !isNaN(parseFloat(amountReceived)) && (
-            <div className="text-right text-xl font-semibold text-gray-700 mt-2">
-              Monto Recibido: {formatGuarani(parseFloat(amountReceived))}
-              <br />
-              Vuelto: {formatGuarani(changeAmount)}
-            </div>
-          )}
-          {paymentMethod === 'tarjeta' && (
-            <div className="text-right text-xl font-semibold text-blue-600 mt-2">
-              💳 Pago con tarjeta - Procesado automáticamente
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="flex gap-4">
-        {showConfirmButton && (
-          <button
-            onClick={isEditing ? handleUpdateSale : handleConfirmSale}
-            disabled={isConfirmingSale || isProcessingSale}
-            className={`flex-1 px-8 py-4 text-white text-xl font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 ${
-              isEditing
+        <div className="flex gap-4">
+          {showConfirmButton && (
+            <button
+              onClick={isEditing ? handleUpdateSale : handleConfirmSale}
+              disabled={isConfirmingSale || isProcessingSale}
+              className={`flex-1 px-8 py-4 text-white text-xl font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 ${isEditing
                 ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-300'
                 : 'bg-green-600 hover:bg-green-700 focus:ring-green-300'
-            } ${(isConfirmingSale || isProcessingSale) ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {(isConfirmingSale || isProcessingSale) ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2 inline-block"></div>
-                Procesando...
-              </>
-            ) : (
-              isEditing ? 'Actualizar Venta' : 'Confirmar Venta'
-            )}
-          </button>
-        )}
+                } ${(isConfirmingSale || isProcessingSale) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {(isConfirmingSale || isProcessingSale) ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2 inline-block"></div>
+                  Procesando...
+                </>
+              ) : (
+                isEditing ? 'Actualizar Venta' : 'Confirmar Venta'
+              )}
+            </button>
+          )}
 
-        {isEditing && (
-          <button
-            onClick={handleCancelEdit}
-            className="px-8 py-4 bg-gray-500 text-white text-xl font-semibold rounded-xl shadow-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300"
-          >
-            Cancelar Edición
-          </button>
-        )}
-      </div>
-
-      <div className="mt-12">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-3xl font-bold text-gray-800">Historial de Ventas</h3>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            {showHistory ? 'Minimizar' : 'Maximizar'}
-          </button>
+          {isEditing && (
+            <button
+              onClick={handleCancelEdit}
+              className="px-8 py-4 bg-gray-500 text-white text-xl font-semibold rounded-xl shadow-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300"
+            >
+              Cancelar Edición
+            </button>
+          )}
         </div>
 
-        {/* Filtros del historial */}
-        {showHistory && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-xl shadow-inner">
-            <h4 className="text-lg font-semibold text-gray-800 mb-4">Filtros del Historial</h4>
-            <div className={`grid gap-4 ${currentUser && currentUser.role === 'admin' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
-              {/* Filtro por cajero solo para admin */}
-              {currentUser && currentUser.role === 'admin' && (
-                <div>
-                  <label htmlFor="cashierFilter" className="block text-gray-700 text-sm font-medium mb-1">
-                    Filtrar por Cajero:
-                  </label>
-                  <select
-                    id="cashierFilter"
-                    value={cashierFilter}
-                    onChange={(e) => setCashierFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-                  >
-                    <option value="">Todos los Cajeros</option>
-                    {/*
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-3xl font-bold text-gray-800">Historial de Ventas</h3>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              {showHistory ? 'Minimizar' : 'Maximizar'}
+            </button>
+          </div>
+
+          {/* Filtros del historial */}
+          {showHistory && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-xl shadow-inner">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Filtros del Historial</h4>
+              <div className={`grid gap-4 ${currentUser && currentUser.role === 'admin' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+                {/* Filtro por cajero solo para admin */}
+                {currentUser && currentUser.role === 'admin' && (
+                  <div>
+                    <label htmlFor="cashierFilter" className="block text-gray-700 text-sm font-medium mb-1">
+                      Filtrar por Cajero:
+                    </label>
+                    <select
+                      id="cashierFilter"
+                      value={cashierFilter}
+                      onChange={(e) => setCashierFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                    >
+                      <option value="">Todos los Cajeros</option>
+                      {/*
                       Mostrar solo cajeros disponibles en la sucursal seleccionada.
                       Si selectedBranch está vacío, mostrar todos los cajeros.
                       Manejar casos en que user.branchId venga poblado como objeto.
                     */}
-                    {users
-                      .filter(user => {
-                        if (user.role !== 'cashier') return false;
-                        if (!selectedBranch || String(selectedBranch).trim() === '') return true;
-                        const userBranch = typeof user.branchId === 'object' && user.branchId
-                          ? (user.branchId._id || user.branchId.id || null)
-                          : user.branchId;
-                        return String(userBranch) === String(selectedBranch);
-                      })
-                      .map(cashier => (
-                        <option key={cashier._id} value={cashier._id}>{cashier.name}</option>
-                      ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Filtros de fecha para todos los usuarios */}
-              <div>
-                <label htmlFor="dateFromFilter" className="block text-gray-700 text-sm font-medium mb-1">
-                  Fecha Desde:
-                </label>
-                <input
-                  type="date"
-                  id="dateFromFilter"
-                  value={dateFromFilter}
-                  onChange={(e) => setDateFromFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="dateToFilter" className="block text-gray-700 text-sm font-medium mb-1">
-                  Fecha Hasta:
-                </label>
-                <input
-                  type="date"
-                  id="dateToFilter"
-                  value={dateToFilter}
-                  onChange={(e) => setDateToFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={() => {
-                  // Solo limpiar filtro de cajero si el usuario es admin
-                  if (currentUser && currentUser.role === 'admin') {
-                    setCashierFilter('');
-                  }
-                  setDateFromFilter('');
-                  setDateToFilter('');
-                }}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                Limpiar Filtros
-              </button>
-            </div>
-          </div>
-        )}
-        {showHistory && (
-          (() => {
-            const historySales = getPaginatedSales();
-            const totalFilteredSales = getFilteredHistorySales().length;
-
-            return totalFilteredSales === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-gray-600 text-xl">No hay ventas que coincidan con los filtros.</p>
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Debug Info:</strong><br/>
-                    Total ventas: {sales?.length || 0}<br/>
-                    Ventas filtradas por sucursal: {filteredSales?.length || 0}<br/>
-                    Ventas después de filtros adicionales: {getFilteredHistorySales().length}<br/>
-                    Página currentPage: {currentPage} de {totalPages}<br/>
-                    Elementos por página: {itemsPerPage}<br/>
-                    Usuario: {currentUser?.name} ({currentUser?.role})<br/>
-                    Sucursal: {currentUser?.branchId || 'No asignada'}<br/>
-                    Filtro cajero: "{cashierFilter}"<br/>
-                    Filtro fecha desde: "{dateFromFilter}"<br/>
-                    Filtro fecha hasta: "{dateToFilter}"<br/>
-                    Rol usuario: {currentUser?.role}<br/>
-                    {currentUser && currentUser.role !== 'admin' && (
-                      <>Nota: Cajeros no tienen acceso al filtro por cajero</>
-                    )}
-                  </p>
-                  {filteredSales?.length > 0 && getFilteredHistorySales().length === 0 && (
-                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
-                      <p className="text-xs text-red-800">
-                        <strong>Posible problema:</strong> Hay ventas filtradas por sucursal pero ninguna pasa los filtros adicionales.
-                        Revisa los filtros aplicados arriba.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white rounded-xl overflow-hidden">
-                    <thead className="bg-gray-100 border-b-2 border-gray-200">
-                      <tr>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">ID Venta</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Cliente</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Cajero</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Fecha</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Método Pago</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Total</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Productos</th>
-                        <th className="py-4 px-6 text-center text-lg font-semibold text-gray-700">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historySales.map((sale) => (
-                        <tr key={sale._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
-                          <td className="py-4 px-6 text-lg text-gray-800">{sale._id}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">{getPersonName(sale.personId)}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">{getCashierName(sale.cashierId)}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">{formatDate(sale.date)}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800 capitalize">{sale.paymentMethod}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">{formatGuarani(sale.total)}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">
-                            <ul className="list-disc list-inside">
-                              {(sale.details || []).map((detail, idx) => (
-                                <li key={idx}>{detail.name} ({detail.quantity})</li>
-                              ))}
-                            </ul>
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <div className="flex justify-center space-x-2">
-                              <button
-                                onClick={() => requestEditSale(sale)}
-                                className="p-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition-all duration-200 transform hover:scale-110"
-                                title="Editar venta"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => { setCurrentSaleTicket(sale); setShowTicketModal(true); }}
-                                className="p-2 bg-green-500 text-white rounded-full shadow-md hover:bg-green-600 transition-all duration-200 transform hover:scale-110"
-                                title="Ver Ticket"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-.586-1.414L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v6a1 1 0 102 0V8z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteSale(sale._id)}
-                                className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
-                                title="Eliminar Venta"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Controles de paginación */}
-                {totalPages > 1 && (
-                  <div className="mt-6 flex justify-center items-center space-x-4">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Anterior
-                    </button>
-
-                    <div className="flex space-x-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(page => {
-                          // Mostrar páginas cercanas a la actual
-                          const diff = Math.abs(page - currentPage);
-                          return diff <= 2 || page === 1 || page === totalPages;
+                      {users
+                        .filter(user => {
+                          if (user.role !== 'cashier') return false;
+                          if (!selectedBranch || String(selectedBranch).trim() === '') return true;
+                          const userBranch = typeof user.branchId === 'object' && user.branchId
+                            ? (user.branchId._id || user.branchId.id || null)
+                            : user.branchId;
+                          return String(userBranch) === String(selectedBranch);
                         })
-                        .map((page, index, array) => {
-                          // Agregar "..." si hay saltos
-                          const prevPage = array[index - 1];
-                          if (prevPage && page - prevPage > 1) {
-                            return (
-                              <React.Fragment key={`ellipsis-${page}`}>
-                                <span className="px-2 py-2 text-gray-500">...</span>
-                                <button
-                                  onClick={() => setCurrentPage(page)}
-                                  className={`px-3 py-2 rounded-lg transition-colors ${
-                                    currentPage === page
-                                      ? 'bg-green-600 text-white'
-                                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                  }`}
-                                >
-                                  {page}
-                                </button>
-                              </React.Fragment>
-                            );
-                          }
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`px-3 py-2 rounded-lg transition-colors ${
-                                currentPage === page
-                                  ? 'bg-green-600 text-white'
-                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          );
-                        })}
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Siguiente
-                    </button>
+                        .map(cashier => (
+                          <option key={cashier._id} value={cashier._id}>{cashier.name}</option>
+                        ))}
+                    </select>
                   </div>
                 )}
 
-                {/* Información de paginación */}
-                <div className="mt-4 text-center text-sm text-gray-600">
-                  Mostrando {historySales.length} de {totalFilteredSales} ventas
-                  {totalPages > 1 && ` (Página ${currentPage} de ${totalPages})`}
+                {/* Filtros de fecha para todos los usuarios */}
+                <div>
+                  <label htmlFor="dateFromFilter" className="block text-gray-700 text-sm font-medium mb-1">
+                    Fecha Desde:
+                  </label>
+                  <input
+                    type="date"
+                    id="dateFromFilter"
+                    value={dateFromFilter}
+                    onChange={(e) => setDateFromFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="dateToFilter" className="block text-gray-700 text-sm font-medium mb-1">
+                    Fecha Hasta:
+                  </label>
+                  <input
+                    type="date"
+                    id="dateToFilter"
+                    value={dateToFilter}
+                    onChange={(e) => setDateToFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
                 </div>
               </div>
-            );
-          })()
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => {
+                    // Solo limpiar filtro de cajero si el usuario es admin
+                    if (currentUser && currentUser.role === 'admin') {
+                      setCashierFilter('');
+                    }
+                    setDateFromFilter('');
+                    setDateToFilter('');
+                  }}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Limpiar Filtros
+                </button>
+              </div>
+            </div>
+          )}
+          {showHistory && (
+            (() => {
+              const historySales = getPaginatedSales();
+              const totalFilteredSales = getFilteredHistorySales().length;
+
+              return totalFilteredSales === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-gray-600 text-xl">No hay ventas que coincidan con los filtros.</p>
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Debug Info:</strong><br />
+                      Total ventas: {sales?.length || 0}<br />
+                      Ventas filtradas por sucursal: {filteredSales?.length || 0}<br />
+                      Ventas después de filtros adicionales: {getFilteredHistorySales().length}<br />
+                      Página currentPage: {currentPage} de {totalPages}<br />
+                      Elementos por página: {itemsPerPage}<br />
+                      Usuario: {currentUser?.name} ({currentUser?.role})<br />
+                      Sucursal: {currentUser?.branchId || 'No asignada'}<br />
+                      Filtro cajero: "{cashierFilter}"<br />
+                      Filtro fecha desde: "{dateFromFilter}"<br />
+                      Filtro fecha hasta: "{dateToFilter}"<br />
+                      Rol usuario: {currentUser?.role}<br />
+                      {currentUser && currentUser.role !== 'admin' && (
+                        <>Nota: Cajeros no tienen acceso al filtro por cajero</>
+                      )}
+                    </p>
+                    {filteredSales?.length > 0 && getFilteredHistorySales().length === 0 && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                        <p className="text-xs text-red-800">
+                          <strong>Posible problema:</strong> Hay ventas filtradas por sucursal pero ninguna pasa los filtros adicionales.
+                          Revisa los filtros aplicados arriba.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-xl overflow-hidden">
+                      <thead className="bg-gray-100 border-b-2 border-gray-200">
+                        <tr>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">ID Venta</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Cliente</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Cajero</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Fecha</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Método Pago</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Total</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Productos</th>
+                          <th className="py-4 px-6 text-center text-lg font-semibold text-gray-700">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historySales.map((sale) => (
+                          <tr key={sale._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
+                            <td className="py-4 px-6 text-lg text-gray-800">{sale._id}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">{getPersonName(sale.personId)}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">{getCashierName(sale.cashierId)}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">{formatDate(sale.date)}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800 capitalize">{sale.paymentMethod}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">{formatGuarani(sale.total)}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">
+                              <ul className="list-disc list-inside">
+                                {(sale.details || []).map((detail, idx) => (
+                                  <li key={idx}>{detail.name} ({detail.quantity})</li>
+                                ))}
+                              </ul>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex justify-center space-x-2">
+                                <button
+                                  onClick={() => requestEditSale(sale)}
+                                  className="p-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition-all duration-200 transform hover:scale-110"
+                                  title="Editar venta"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => { setCurrentSaleTicket(sale); setShowTicketModal(true); }}
+                                  className="p-2 bg-green-500 text-white rounded-full shadow-md hover:bg-green-600 transition-all duration-200 transform hover:scale-110"
+                                  title="Ver Ticket"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-.586-1.414L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v6a1 1 0 102 0V8z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSale(sale._id)}
+                                  className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
+                                  title="Eliminar Venta"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Controles de paginación */}
+                  {totalPages > 1 && (
+                    <div className="mt-6 flex justify-center items-center space-x-4">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Anterior
+                      </button>
+
+                      <div className="flex space-x-2">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(page => {
+                            // Mostrar páginas cercanas a la actual
+                            const diff = Math.abs(page - currentPage);
+                            return diff <= 2 || page === 1 || page === totalPages;
+                          })
+                          .map((page, index, array) => {
+                            // Agregar "..." si hay saltos
+                            const prevPage = array[index - 1];
+                            if (prevPage && page - prevPage > 1) {
+                              return (
+                                <React.Fragment key={`ellipsis-${page}`}>
+                                  <span className="px-2 py-2 text-gray-500">...</span>
+                                  <button
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-2 rounded-lg transition-colors ${currentPage === page
+                                      ? 'bg-green-600 text-white'
+                                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                      }`}
+                                  >
+                                    {page}
+                                  </button>
+                                </React.Fragment>
+                              );
+                            }
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-2 rounded-lg transition-colors ${currentPage === page
+                                  ? 'bg-green-600 text-white'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                  }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          })}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Información de paginación */}
+                  <div className="mt-4 text-center text-sm text-gray-600">
+                    Mostrando {historySales.length} de {totalFilteredSales} ventas
+                    {totalPages > 1 && ` (Página ${currentPage} de ${totalPages})`}
+                  </div>
+                </div>
+              );
+            })()
+          )}
+        </div>
+
+        {showTicketModal && (
+          <SaleTicketModal
+            sale={currentSaleTicket}
+            onClose={() => {
+              setShowTicketModal(false);
+              // Resetear el estado del botón cuando se cierra el ticket
+              setShowConfirmButton(true);
+              setIsConfirmingSale(false);
+              setIsProcessingSale(false);
+            }}
+            getPersonName={getPersonName}
+            getCashierName={getCashierName}
+            formatGuarani={formatGuarani}
+          />
+        )}
+
+        {/* Modal de contraseña de administrador (Eliminar) */}
+        {showAdminPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                Confirmar Eliminación
+              </h3>
+              <p className="text-gray-600 mb-6 text-center">
+                Para eliminar esta venta, ingresa la contraseña del administrador:
+              </p>
+              <div className="mb-6">
+                <label htmlFor="adminPassword" className="block text-gray-700 text-sm font-medium mb-2">
+                  Contraseña del Administrador:
+                </label>
+                <input
+                  type="password"
+                  id="adminPassword"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200"
+                  placeholder="Ingresa la contraseña..."
+                  disabled={isDeleting}
+                />
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmDeleteWithPassword}
+                  disabled={isDeleting || !adminPassword.trim()}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Eliminando...
+                    </>
+                  ) : (
+                    'Eliminar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de contraseña de administrador (Editar - requiere validación previa en backend) */}
+        {showAdminPasswordModalForEdit && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                Autorizar Edición
+              </h3>
+              <p className="text-gray-600 mb-6 text-center">
+                Para editar esta venta, ingresa la contraseña del administrador (o solicita al admin que la ingrese):
+              </p>
+              <div className="mb-6">
+                <label htmlFor="adminPasswordForEdit" className="block text-gray-700 text-sm font-medium mb-2">
+                  Contraseña del Administrador:
+                </label>
+                <input
+                  type="password"
+                  id="adminPasswordForEdit"
+                  value={adminPasswordForEdit}
+                  onChange={(e) => setAdminPasswordForEdit(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                  placeholder="Ingresa la contraseña..."
+                  disabled={isVerifyingPassword}
+                />
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleCancelEditPassword}
+                  disabled={isVerifyingPassword}
+                  className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmEditWithPassword}
+                  disabled={isVerifyingPassword || !adminPasswordForEdit.trim()}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isVerifyingPassword ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Verificando...
+                    </>
+                  ) : (
+                    'Validar y Editar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
-
-      {showTicketModal && (
-        <SaleTicketModal
-          sale={currentSaleTicket}
-          onClose={() => {
-            setShowTicketModal(false);
-            // Resetear el estado del botón cuando se cierra el ticket
-            setShowConfirmButton(true);
-            setIsConfirmingSale(false);
-            setIsProcessingSale(false);
-          }}
-          getPersonName={getPersonName}
-          getCashierName={getCashierName}
-          formatGuarani={formatGuarani}
-        />
-      )}
-
-      {/* Modal de contraseña de administrador (Eliminar) */}
-      {showAdminPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Confirmar Eliminación
-            </h3>
-            <p className="text-gray-600 mb-6 text-center">
-              Para eliminar esta venta, ingresa la contraseña del administrador:
-            </p>
-            <div className="mb-6">
-              <label htmlFor="adminPassword" className="block text-gray-700 text-sm font-medium mb-2">
-                Contraseña del Administrador:
-              </label>
-              <input
-                type="password"
-                id="adminPassword"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200"
-                placeholder="Ingresa la contraseña..."
-                disabled={isDeleting}
-              />
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={handleCancelDelete}
-                disabled={isDeleting}
-                className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDeleteWithPassword}
-                disabled={isDeleting || !adminPassword.trim()}
-                className="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Eliminando...
-                  </>
-                ) : (
-                  'Eliminar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de contraseña de administrador (Editar - requiere validación previa en backend) */}
-      {showAdminPasswordModalForEdit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Autorizar Edición
-            </h3>
-            <p className="text-gray-600 mb-6 text-center">
-              Para editar esta venta, ingresa la contraseña del administrador (o solicita al admin que la ingrese):
-            </p>
-            <div className="mb-6">
-              <label htmlFor="adminPasswordForEdit" className="block text-gray-700 text-sm font-medium mb-2">
-                Contraseña del Administrador:
-              </label>
-              <input
-                type="password"
-                id="adminPasswordForEdit"
-                value={adminPasswordForEdit}
-                onChange={(e) => setAdminPasswordForEdit(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                placeholder="Ingresa la contraseña..."
-                disabled={isVerifyingPassword}
-              />
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={handleCancelEditPassword}
-                disabled={isVerifyingPassword}
-                className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmEditWithPassword}
-                disabled={isVerifyingPassword || !adminPasswordForEdit.trim()}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isVerifyingPassword ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Verificando...
-                  </>
-                ) : (
-                  'Validar y Editar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -299,292 +299,305 @@ const DefectiveProductsModule = ({ products, persons, users = [], branches = [],
   };
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto my-8">
-      <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Productos Defectuosos</h2>
+    <div
+      className="h-full flex flex-col relative p-4"
+      style={{
+        backgroundImage: 'url(/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
 
-      {/* Mostrar información de la sucursal actual */}
-      {currentUser && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-          <h3 className="text-lg font-semibold text-blue-800 mb-2">
-            📍 Sucursal Actual
-          </h3>
-          <p className="text-blue-700">
-            {currentUser.role === 'admin' ? (
-              selectedBranch ?
-                `Mostrando datos de: ${branches.find(b => b._id === selectedBranch)?.name || 'Sucursal seleccionada'}` :
-                'Selecciona una sucursal en el header para ver proveedores y productos'
-            ) : (
-              `Sucursal asignada: ${branches.find(b => b._id === currentUser.branchId)?.name || 'Sucursal del cajero'}`
-            )}
-          </p>
-        </div>
-      )}
+      <div className="relative bg-white bg-opacity-95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto z-10 h-full overflow-auto w-full">
+        <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Productos Defectuosos</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
-          <label htmlFor="product" className="block text-gray-700 text-lg font-medium mb-2">
-            Producto Defectuoso:
-          </label>
-          <select
-            id="product"
-            value={selectedProduct}
-            onChange={(e) => setSelectedProduct(e.target.value)}
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg bg-white"
-          >
-            <option value="">
-              {currentUser?.role === 'admin' && !selectedBranch
-                ? "Primero selecciona una sucursal en el header"
-                : "Selecciona un producto"
-              }
-            </option>
-            {filteredProducts.map(product => (
-              <option key={product._id} value={product._id}>{product.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="supplier" className="block text-gray-700 text-lg font-medium mb-2">
-            Proveedor:
-          </label>
-          <select
-            id="supplier"
-            value={selectedSupplier}
-            onChange={(e) => setSelectedSupplier(e.target.value)}
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg bg-white"
-          >
-            <option value="">
-              {filteredSuppliers.length === 0 ? (currentUser?.role === 'admin' && !selectedBranch ? "Selecciona una sucursal para ver proveedores" : "No hay proveedores disponibles") : "Selecciona un proveedor"}
-            </option>
-            {filteredSuppliers.map(supplier => (
-              <option key={supplier._id} value={supplier._id}>{supplier.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="quantity" className="block text-gray-700 text-lg font-medium mb-2">
-            Cantidad:
-          </label>
-          <input
-            type="number"
-            id="quantity"
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
-            min="1"
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg"
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label htmlFor="description" className="block text-gray-700 text-lg font-medium mb-2">
-            Descripción del Defecto:
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows="3"
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg resize-none"
-            placeholder="Describe el problema con el producto..."
-          ></textarea>
-        </div>
-        <div className="md:col-span-2">
-          <button
-            onClick={handleAddDefective}
-            className="w-full px-8 py-4 bg-orange-600 text-white text-xl font-semibold rounded-xl shadow-lg hover:bg-orange-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300"
-          >
-            Registrar Producto Defectuoso
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-12">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-3xl font-bold text-gray-800">Historial de Productos Defectuosos</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              {currentUser?.role === 'admin'
-                ? `Mostrando productos defectuosos ${selectedBranch ? `de ${branches.find(b => b._id === selectedBranch)?.name || 'sucursal seleccionada'}` : 'de todas las sucursales'} (${defectiveProductsHistory.length})`
-                : `Mostrando productos defectuosos de tu sucursal (${defectiveProductsHistory.length})`
-              }
+        {/* Mostrar información de la sucursal actual */}
+        {currentUser && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              📍 Sucursal Actual
+            </h3>
+            <p className="text-blue-700">
+              {currentUser.role === 'admin' ? (
+                selectedBranch ?
+                  `Mostrando datos de: ${branches.find(b => b._id === selectedBranch)?.name || 'Sucursal seleccionada'}` :
+                  'Selecciona una sucursal en el header para ver proveedores y productos'
+              ) : (
+                `Sucursal asignada: ${branches.find(b => b._id === currentUser.branchId)?.name || 'Sucursal del cajero'}`
+              )}
             </p>
-          </div>
-          <button
-            onClick={handleReloadData}
-            disabled={isReloading}
-            className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isReloading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Cargando...
-              </>
-            ) : (
-              <>
-                🔄 Recargar
-              </>
-            )}
-          </button>
-        </div>
-
-        {isLoadingHistory ? (
-          <div className="text-center py-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 text-xl">Cargando historial de productos defectuosos...</p>
-          </div>
-        ) : defectiveProductsHistory.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-gray-600 text-xl">No hay productos defectuosos registrados.</p>
-            <p className="text-gray-500 text-sm mt-2">
-              {currentUser?.role === 'admin'
-                ? selectedBranch
-                  ? `No hay productos defectuosos reportados en ${branches.find(b => b._id === selectedBranch)?.name || 'la sucursal seleccionada'}.`
-                  : 'Selecciona una sucursal para ver los productos defectuosos, o aparecerán aquí cuando sean reportados en cualquier sucursal.'
-                : 'Los productos defectuosos de tu sucursal aparecerán aquí cuando sean reportados.'
-              }
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-xl overflow-hidden">
-              <thead className="bg-gray-100 border-b-2 border-gray-200">
-                <tr>
-                  <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Producto</th>
-                  <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Proveedor</th>
-                  <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Cantidad</th>
-                  <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Descripción</th>
-                  <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Estado</th>
-                  <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Reportado Por</th>
-                  {currentUser?.role === 'admin' && (
-                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Sucursal</th>
-                  )}
-                  <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Fecha Reporte</th>
-                  <th className="py-4 px-6 text-center text-lg font-semibold text-gray-700">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {defectiveProductsHistory.map((item) => (
-                  <tr key={item._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
-                    <td className="py-4 px-6 text-lg text-gray-800">{getProductName(item.productId)}</td>
-                    <td className="py-4 px-6 text-lg text-gray-800">{getPersonName(item.supplierId)}</td>
-                    <td className="py-4 px-6 text-lg text-gray-800">{item.quantity}</td>
-                    <td className="py-4 px-6 text-lg text-gray-800">{item.description}</td>
-                    <td className="py-4 px-6 text-lg text-gray-800">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.status === 'reportado' ? 'bg-yellow-100 text-yellow-800' :
-                        item.status === 'reemplazado' ? 'bg-green-100 text-green-800' :
-                        item.status === 'rechazado' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-lg text-gray-800">{getReporterName(item.reportedBy)}</td>
-                    {currentUser?.role === 'admin' && (
-                      <td className="py-4 px-6 text-lg text-gray-800">{getBranchName(item.branchId)}</td>
-                    )}
-                    <td className="py-4 px-6 text-lg text-gray-800">
-                      {new Date(item.dateReported).toLocaleDateString('es-ES')}
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      <button
-                        onClick={() => handleDeleteDefective(item)}
-                        className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
-                        title="Eliminar producto defectuoso"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
 
-        {/* Mostrar productos agregados en esta sesión si los hay */}
-        {defectiveProductsList.length > 0 && (
-          <div className="mt-8">
-            <h4 className="text-2xl font-bold text-gray-800 mb-4">Productos Agregados en Esta Sesión</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label htmlFor="product" className="block text-gray-700 text-lg font-medium mb-2">
+              Producto Defectuoso:
+            </label>
+            <select
+              id="product"
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg bg-white"
+            >
+              <option value="">
+                {currentUser?.role === 'admin' && !selectedBranch
+                  ? "Primero selecciona una sucursal en el header"
+                  : "Selecciona un producto"
+                }
+              </option>
+              {filteredProducts.map(product => (
+                <option key={product._id} value={product._id}>{product.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="supplier" className="block text-gray-700 text-lg font-medium mb-2">
+              Proveedor:
+            </label>
+            <select
+              id="supplier"
+              value={selectedSupplier}
+              onChange={(e) => setSelectedSupplier(e.target.value)}
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg bg-white"
+            >
+              <option value="">
+                {filteredSuppliers.length === 0 ? (currentUser?.role === 'admin' && !selectedBranch ? "Selecciona una sucursal para ver proveedores" : "No hay proveedores disponibles") : "Selecciona un proveedor"}
+              </option>
+              {filteredSuppliers.map(supplier => (
+                <option key={supplier._id} value={supplier._id}>{supplier.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="quantity" className="block text-gray-700 text-lg font-medium mb-2">
+              Cantidad:
+            </label>
+            <input
+              type="number"
+              id="quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
+              min="1"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label htmlFor="description" className="block text-gray-700 text-lg font-medium mb-2">
+              Descripción del Defecto:
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows="3"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200 text-lg resize-none"
+              placeholder="Describe el problema con el producto..."
+            ></textarea>
+          </div>
+          <div className="md:col-span-2">
+            <button
+              onClick={handleAddDefective}
+              className="w-full px-8 py-4 bg-orange-600 text-white text-xl font-semibold rounded-xl shadow-lg hover:bg-orange-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300"
+            >
+              Registrar Producto Defectuoso
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-3xl font-bold text-gray-800">Historial de Productos Defectuosos</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {currentUser?.role === 'admin'
+                  ? `Mostrando productos defectuosos ${selectedBranch ? `de ${branches.find(b => b._id === selectedBranch)?.name || 'sucursal seleccionada'}` : 'de todas las sucursales'} (${defectiveProductsHistory.length})`
+                  : `Mostrando productos defectuosos de tu sucursal (${defectiveProductsHistory.length})`
+                }
+              </p>
+            </div>
+            <button
+              onClick={handleReloadData}
+              disabled={isReloading}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isReloading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Cargando...
+                </>
+              ) : (
+                <>
+                  🔄 Recargar
+                </>
+              )}
+            </button>
+          </div>
+
+          {isLoadingHistory ? (
+            <div className="text-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 text-xl">Cargando historial de productos defectuosos...</p>
+            </div>
+          ) : defectiveProductsHistory.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-600 text-xl">No hay productos defectuosos registrados.</p>
+              <p className="text-gray-500 text-sm mt-2">
+                {currentUser?.role === 'admin'
+                  ? selectedBranch
+                    ? `No hay productos defectuosos reportados en ${branches.find(b => b._id === selectedBranch)?.name || 'la sucursal seleccionada'}.`
+                    : 'Selecciona una sucursal para ver los productos defectuosos, o aparecerán aquí cuando sean reportados en cualquier sucursal.'
+                  : 'Los productos defectuosos de tu sucursal aparecerán aquí cuando sean reportados.'
+                }
+              </p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-blue-50 rounded-xl overflow-hidden">
-                <thead className="bg-blue-100 border-b-2 border-blue-200">
+              <table className="min-w-full bg-white rounded-xl overflow-hidden">
+                <thead className="bg-gray-100 border-b-2 border-gray-200">
                   <tr>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Producto</th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Proveedor</th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Cantidad</th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Descripción</th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Fecha</th>
+                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Producto</th>
+                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Proveedor</th>
+                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Cantidad</th>
+                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Descripción</th>
+                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Estado</th>
+                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Reportado Por</th>
+                    {currentUser?.role === 'admin' && (
+                      <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Sucursal</th>
+                    )}
+                    <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Fecha Reporte</th>
+                    <th className="py-4 px-6 text-center text-lg font-semibold text-gray-700">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {defectiveProductsList.map((item) => (
-                    <tr key={item._id} className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
-                      <td className="py-3 px-4 text-sm text-blue-800">{getProductName(item.productId)}</td>
-                      <td className="py-3 px-4 text-sm text-blue-800">{getPersonName(item.supplierId)}</td>
-                      <td className="py-3 px-4 text-sm text-blue-800">{item.quantity}</td>
-                      <td className="py-3 px-4 text-sm text-blue-800">{item.description}</td>
-                      <td className="py-3 px-4 text-sm text-blue-800">{item.dateReported}</td>
+                  {defectiveProductsHistory.map((item) => (
+                    <tr key={item._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
+                      <td className="py-4 px-6 text-lg text-gray-800">{getProductName(item.productId)}</td>
+                      <td className="py-4 px-6 text-lg text-gray-800">{getPersonName(item.supplierId)}</td>
+                      <td className="py-4 px-6 text-lg text-gray-800">{item.quantity}</td>
+                      <td className="py-4 px-6 text-lg text-gray-800">{item.description}</td>
+                      <td className="py-4 px-6 text-lg text-gray-800">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'reportado' ? 'bg-yellow-100 text-yellow-800' :
+                          item.status === 'reemplazado' ? 'bg-green-100 text-green-800' :
+                            item.status === 'rechazado' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                          }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-lg text-gray-800">{getReporterName(item.reportedBy)}</td>
+                      {currentUser?.role === 'admin' && (
+                        <td className="py-4 px-6 text-lg text-gray-800">{getBranchName(item.branchId)}</td>
+                      )}
+                      <td className="py-4 px-6 text-lg text-gray-800">
+                        {new Date(item.dateReported).toLocaleDateString('es-ES')}
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <button
+                          onClick={() => handleDeleteDefective(item)}
+                          className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
+                          title="Eliminar producto defectuoso"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          )}
+
+          {/* Mostrar productos agregados en esta sesión si los hay */}
+          {defectiveProductsList.length > 0 && (
+            <div className="mt-8">
+              <h4 className="text-2xl font-bold text-gray-800 mb-4">Productos Agregados en Esta Sesión</h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-blue-50 rounded-xl overflow-hidden">
+                  <thead className="bg-blue-100 border-b-2 border-blue-200">
+                    <tr>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Producto</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Proveedor</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Cantidad</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Descripción</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-blue-700">Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {defectiveProductsList.map((item) => (
+                      <tr key={item._id} className="border-b border-blue-100 hover:bg-blue-50 transition-colors">
+                        <td className="py-3 px-4 text-sm text-blue-800">{getProductName(item.productId)}</td>
+                        <td className="py-3 px-4 text-sm text-blue-800">{getPersonName(item.supplierId)}</td>
+                        <td className="py-3 px-4 text-sm text-blue-800">{item.quantity}</td>
+                        <td className="py-3 px-4 text-sm text-blue-800">{item.description}</td>
+                        <td className="py-3 px-4 text-sm text-blue-800">{item.dateReported}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal de eliminación */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                Confirmar Eliminación
+              </h3>
+              <p className="text-gray-600 mb-6 text-center">
+                Para eliminar este producto defectuoso, ingresa la contraseña del administrador:
+              </p>
+              <div className="mb-6">
+                <label htmlFor="deletePassword" className="block text-gray-700 text-sm font-medium mb-2">
+                  Contraseña del Administrador:
+                </label>
+                <input
+                  type="password"
+                  id="deletePassword"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200"
+                  placeholder="Ingresa la contraseña..."
+                  disabled={isDeleting}
+                />
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting || !deletePassword.trim()}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Eliminando...
+                    </>
+                  ) : (
+                    'Eliminar'
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Modal de eliminación */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Confirmar Eliminación
-            </h3>
-            <p className="text-gray-600 mb-6 text-center">
-              Para eliminar este producto defectuoso, ingresa la contraseña del administrador:
-            </p>
-            <div className="mb-6">
-              <label htmlFor="deletePassword" className="block text-gray-700 text-sm font-medium mb-2">
-                Contraseña del Administrador:
-              </label>
-              <input
-                type="password"
-                id="deletePassword"
-                value={deletePassword}
-                onChange={(e) => setDeletePassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200"
-                placeholder="Ingresa la contraseña..."
-                disabled={isDeleting}
-              />
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={handleCancelDelete}
-                disabled={isDeleting}
-                className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={isDeleting || !deletePassword.trim()}
-                className="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Eliminando...
-                  </>
-                ) : (
-                  'Eliminar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+
   );
 };
 

@@ -48,7 +48,7 @@ const LoginScreen = ({ onLogin, users = [], branches = [] }) => {
     }
 
     // Verificar caracteres peligrosos
-    const dangerousChars = /[<>\"';&]/;
+    const dangerousChars = /[<>"';&]/;
     if (dangerousChars.test(username) || dangerousChars.test(password)) {
       setError('Caracteres no permitidos en usuario o contraseña');
       return;
@@ -111,13 +111,34 @@ const LoginScreen = ({ onLogin, users = [], branches = [] }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-6">
-      <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
+    <div
+      className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden"
+      style={{
+        backgroundImage: 'url(/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay oscuro para mejorar legibilidad */}
+      <div className="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm"></div>
+
+      {/* Card de login con glassmorphism */}
+      <div className="relative bg-white bg-opacity-95 backdrop-blur-md p-10 rounded-3xl shadow-2xl max-w-md w-full border border-white border-opacity-20">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img
+              src="/logo.png"
+              alt="Electrocard Logo"
+              className="h-24 w-auto object-contain drop-shadow-lg"
+            />
+          </div>
+
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
             Electrocard
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600 text-lg font-medium">
             Sistema de Gestión
           </p>
         </div>
@@ -132,7 +153,7 @@ const LoginScreen = ({ onLogin, users = [], branches = [] }) => {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-lg bg-white bg-opacity-90"
               placeholder="Nombre de usuario"
               required
               disabled={loading}
@@ -147,19 +168,21 @@ const LoginScreen = ({ onLogin, users = [], branches = [] }) => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-lg bg-white bg-opacity-90"
               placeholder="Contraseña"
               required
               disabled={loading}
             />
           </div>
           {error && (
-            <p className="text-red-600 text-center text-md font-semibold">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-red-600 text-center text-md font-semibold">{error}</p>
+            </div>
           )}
           <button
             type="submit"
             disabled={loading || (blockedUntil && Date.now() < blockedUntil)}
-            className="w-full px-8 py-4 bg-blue-600 text-white text-xl font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xl font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
           >
             {loading ? '🔄 Conectando...' : (blockedUntil && Date.now() < blockedUntil) ? '⏳ Bloqueado temporalmente' : 'Iniciar Sesión'}
           </button>

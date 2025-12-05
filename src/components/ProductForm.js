@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUser = null }) => {
   const { token } = useAuth();
   const [name, setName] = useState(product.name || '');
-  const [category, setCategory] = useState(product.category || 'vapeador');
+  const [category, setCategory] = useState(product.category || '');
   const [price, setPrice] = useState(product.price || '');
   const [purchasePrice, setPurchasePrice] = useState(product.purchasePrice || '');
   // Para múltiples sucursales con stock individual
@@ -65,7 +65,7 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
       } catch (error) {
         console.error('Error al cargar categorías:', error);
         // Fallback a categorías por defecto si falla la carga
-        setProductCategories(['vapeador', 'accesorio', 'salt', 'vapes', 'cartuchos', 'baterias', 'desechables', 'recargables', 'esencias', 'otro']);
+        setProductCategories([]);
       } finally {
         setLoadingCategories(false);
       }
@@ -80,6 +80,11 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
     e.preventDefault();
 
     if (isSaving) return; // Evitar múltiples envíos
+
+    if (!category) {
+      alert('Por favor, selecciona una categoría para el producto.');
+      return;
+    }
 
     if (selectedBranches.length === 0) {
       alert('Debes seleccionar al menos una sucursal y especificar el stock.');
@@ -183,7 +188,7 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
       <p className="text-sm text-gray-600 mb-6 text-center">
         Los productos pueden agregarse a múltiples sucursales con stock individual. Los cajeros pueden gestionar el stock de sus sucursales.
       </p>
-      
+
       {/* Mostrar información de sucursal para cajeros */}
       {isCashierUser && currentUser.branchId && (
         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
@@ -191,8 +196,8 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
             <strong>Sucursal:</strong> {branches.find(b => b._id === currentUser.branchId)?.name || 'Sucursal actual'}
           </p>
         </div>
-  )}
-      
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label htmlFor="name" className="block text-gray-700 text-lg font-medium mb-2">
@@ -221,6 +226,7 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
               required
               disabled={loadingCategories}
             >
+              <option value="" disabled>Seleccionar categoría...</option>
               {loadingCategories ? (
                 <option>Cargando categorías...</option>
               ) : (
@@ -241,7 +247,7 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
               </button>
             )}
           </div>
-          
+
           {showNewCategoryInput && isAdmin && (
             <div className="mt-2 flex space-x-2">
               <input
@@ -377,11 +383,10 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
           <button
             type="submit"
             disabled={isSaving}
-            className={`flex-1 py-3 px-6 rounded-xl font-semibold transition duration-200 ${
-              isSaving
+            className={`flex-1 py-3 px-6 rounded-xl font-semibold transition duration-200 ${isSaving
                 ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+              }`}
           >
             {isSaving ? 'Guardando...' : (product.id ? 'Actualizar' : 'Guardar')}
           </button>
@@ -389,11 +394,10 @@ const ProductForm = ({ product = {}, onSave, onCancel, branches = [], currentUse
             type="button"
             onClick={onCancel}
             disabled={isSaving}
-            className={`flex-1 py-3 px-6 rounded-xl font-semibold transition duration-200 ${
-              isSaving
+            className={`flex-1 py-3 px-6 rounded-xl font-semibold transition duration-200 ${isSaving
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-            }`}
+              }`}
           >
             Cancelar
           </button>

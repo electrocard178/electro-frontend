@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { purchaseService, authService } from '../services/apiService';
- 
+
 const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onDeletePurchase, purchases, moduleState, setModuleState, currentUser, users = [], branches = [], selectedBranch }) => {
   const { token } = useAuth();
-  
+
   console.log('🔍 DEBUG PurchasesModule - Token disponible:', token ? 'Sí' : 'No');
   console.log('🔍 DEBUG PurchasesModule - Token longitud:', token ? token.length : 0);
   const { selectedPerson, selectedProduct, quantity, priceOverride, purchaseDetails } = moduleState;
@@ -213,10 +213,10 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
   const formatGuarani = (amount) => {
     return `₲ ${amount.toLocaleString('es-PY', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
-  
+
   const formatDate = (d) => {
     if (!d) return '';
-    
+
     try {
       // Si es string en formato YYYY-MM-DD
       if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
@@ -224,28 +224,28 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
         const [year, month, day] = d.split('-');
         return `${day}/${month}/${year}`;
       }
-      
+
       // Si es string con formato ISO
       if (typeof d === 'string' && d.includes('T')) {
         const dateObj = new Date(d);
-        return dateObj.toLocaleDateString('es-PY', { 
+        return dateObj.toLocaleDateString('es-PY', {
           timeZone: 'America/Asuncion',
           year: 'numeric',
           month: '2-digit',
           day: '2-digit'
         });
       }
-      
+
       // Si es Date object
       if (d instanceof Date) {
-        return d.toLocaleDateString('es-PY', { 
+        return d.toLocaleDateString('es-PY', {
           timeZone: 'America/Asuncion',
           year: 'numeric',
           month: '2-digit',
           day: '2-digit'
         });
       }
-      
+
       // Para cualquier otro caso, convertir a string
       return String(d);
     } catch (error) {
@@ -255,8 +255,8 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
   };
 
   const handleProductSelect = (e) => {
-  const productId = e.target.value;
-  const product = filteredProducts.find(p => (p._id === productId));
+    const productId = e.target.value;
+    const product = filteredProducts.find(p => (p._id === productId));
     setModuleState(prev => ({
       ...prev,
       selectedProduct: productId,
@@ -265,7 +265,7 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
   };
 
   const handleAddProductToPurchase = () => {
-  const product = filteredProducts.find(p => (p._id === selectedProduct));
+    const product = filteredProducts.find(p => (p._id === selectedProduct));
     const finalPrice = priceOverride !== '' ? parseFloat(priceOverride) : (product ? product.price : 0);
 
     if (!product) {
@@ -282,7 +282,7 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
     }
     // Si todo es válido, agregar al carrito
     if (product && quantity > 0 && finalPrice > 0) {
-  const existingItemIndex = purchaseDetails.findIndex(item => item._id === product._id);
+      const existingItemIndex = purchaseDetails.findIndex(item => item._id === product._id);
       if (existingItemIndex > -1) {
         const updatedDetails = [...purchaseDetails];
         const existingItem = updatedDetails[existingItemIndex];
@@ -350,40 +350,40 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
       const total = purchaseDetails.reduce((sum, item) => sum + item.subtotal, 0);
 
       // Determinar la sucursal y el cajero para la compra usando el currentUser recibido como prop
-       // (NO usar localStorage aquí; confiar en el currentUser que pasó App.js)
-       let branchId = null;
-       let cashierId = null;
-       if (currentUser) {
-         cashierId = currentUser._id || currentUser.id || null;
-         if (currentUser.role === 'admin') {
-           // Para admin, usar la sucursal seleccionada por el administrador o tomar la sucursal del primer producto si existe
-           branchId = selectedBranch || (purchaseDetails.length > 0 ? purchaseDetails[0].branchId : null);
-         } else if (currentUser.role === 'cashier') {
-           branchId = currentUser.branchId;
-         }
-       }
+      // (NO usar localStorage aquí; confiar en el currentUser que pasó App.js)
+      let branchId = null;
+      let cashierId = null;
+      if (currentUser) {
+        cashierId = currentUser._id || currentUser.id || null;
+        if (currentUser.role === 'admin') {
+          // Para admin, usar la sucursal seleccionada por el administrador o tomar la sucursal del primer producto si existe
+          branchId = selectedBranch || (purchaseDetails.length > 0 ? purchaseDetails[0].branchId : null);
+        } else if (currentUser.role === 'cashier') {
+          branchId = currentUser.branchId;
+        }
+      }
 
-       // Mapear los detalles para enviar productId, name, quantity, price, subtotal
-       const details = purchaseDetails.map(item => ({
-         productId: item._id || item.productId,
-         name: item.name,
-         quantity: item.quantity,
-         price: item.price,
-         subtotal: item.subtotal
-       }));
+      // Mapear los detalles para enviar productId, name, quantity, price, subtotal
+      const details = purchaseDetails.map(item => ({
+        productId: item._id || item.productId,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        subtotal: item.subtotal
+      }));
 
-       // Obtener fecha y hora actual para mantener el orden correcto
-       const now = new Date();
-       
-       await onAddPurchase({
-         personId: selectedPerson,
-         cashierId: cashierId,
-         branchId: branchId,
-         date: now.toISOString(), // Enviar fecha completa con hora
-         details,
-         total,
-         userId: cashierId
-       });
+      // Obtener fecha y hora actual para mantener el orden correcto
+      const now = new Date();
+
+      await onAddPurchase({
+        personId: selectedPerson,
+        cashierId: cashierId,
+        branchId: branchId,
+        date: now.toISOString(), // Enviar fecha completa con hora
+        details,
+        total,
+        userId: cashierId
+      });
 
       // Limpiar el estado del módulo después de la confirmación
       setModuleState({
@@ -425,16 +425,16 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
     console.log('🔍 DEBUG handleDeletePurchase - Token longitud:', token ? token.length : 0);
     console.log('🔍 DEBUG handleDeletePurchase - currentUser:', currentUser);
     console.log('🔍 DEBUG handleDeletePurchase - purchaseId:', purchaseId);
-    
+
     try {
       // Primero verificar si se puede eliminar la compra
       const canDeleteResponse = await purchaseService.canDelete(token, currentUser, purchaseId);
-      
+
       if (!canDeleteResponse.canDelete) {
         alert(canDeleteResponse.message || 'No se puede eliminar esta compra.');
         return;
       }
-      
+
       // Si se puede eliminar, pedir confirmación
       if (window.confirm('¿Estás seguro de que quieres eliminar esta compra?')) {
         setPendingDeleteId(purchaseId);
@@ -442,10 +442,10 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
       }
     } catch (error) {
       console.error('Error verificando si se puede eliminar compra:', error);
-      
+
       // Manejar diferentes tipos de errores
       let errorMessage = 'Error al verificar si se puede eliminar la compra. Inténtalo de nuevo.';
-      
+
       if (error?.status === 401 || error?.response?.status === 401) {
         // Verificar si es un error de token expirado o falta de autenticación
         const errorData = error?.response?.data;
@@ -464,7 +464,7 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       alert(errorMessage);
     }
   };
@@ -493,10 +493,10 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
       alert('Compra eliminada exitosamente.');
     } catch (error) {
       console.error('Error eliminando compra:', error);
-      
+
       // Manejar diferentes tipos de errores
       let errorMessage = 'Error al eliminar la compra.';
-      
+
       if (error?.status === 401 || error?.response?.status === 401) {
         // Verificar si es un error de token expirado o falta de autenticación
         const errorData = error?.response?.data;
@@ -519,7 +519,7 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
       } else if (error?.response?.status === 400) {
         errorMessage = 'No se puede eliminar esta compra. Verifica que no tenga ventas asociadas.';
       }
-      
+
       alert(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -587,9 +587,9 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
       alert('Por favor, selecciona un proveedor y agrega al menos un producto.');
       return;
     }
-    
+
     const total = purchaseDetails.reduce((sum, item) => sum + item.subtotal, 0);
-    
+
     const updatedPurchase = {
       ...editingPurchase,
       personId: selectedPerson,
@@ -597,12 +597,12 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
       total,
       branchId: currentUser?.role === 'admin' ? selectedBranch : editingPurchase.branchId,
     };
-    
+
     onEditPurchase(updatedPurchase, verifiedAdminPassword);
 
     // Limpiar contraseña verificada tras usarla
     setVerifiedAdminPassword(null);
-    
+
     // Limpiar estado
     setModuleState({
       selectedPerson: '',
@@ -643,462 +643,473 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
   }, [selectedBranch]);
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto my-8">
-      <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">
-        Módulo de Compras
-        {isEditing && (
-          <span className="block text-2xl text-blue-600 mt-2">
-            ✏️ Editando Compra: {editingPurchase?.id}
-          </span>
+    <div
+      className="h-full flex flex-col relative p-4"
+      style={{
+        backgroundImage: 'url(/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+
+      <div className="relative bg-white bg-opacity-95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto z-10 h-full overflow-auto w-full">
+        <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">
+          Módulo de Compras
+          {isEditing && (
+            <span className="block text-2xl text-blue-600 mt-2">
+              ✏️ Editando Compra: {editingPurchase?.id}
+            </span>
+          )}
+        </h2>
+
+        {/* Mostrar información de la sucursal actual o seleccionada */}
+        {currentUser && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <p className="text-lg font-semibold text-blue-800">
+              {currentUser.role === 'admin' && selectedBranch ? (
+                <>Sucursal seleccionada: {(() => {
+                  const sel = branches.find(b => b._id === selectedBranch);
+                  return sel ? sel.name : selectedBranch;
+                })()}</>
+              ) : currentUser.branchId ? (
+                <>Sucursal actual: {(() => {
+                  const userBranch = branches.find(b => b._id === currentUser.branchId);
+                  return userBranch ? userBranch.name : currentUser.branchId;
+                })()}</>
+              ) : (
+                'Sucursal no asignada'
+              )}
+            </p>
+            <p className="text-sm text-blue-600">
+              {currentUser.role === 'admin' && selectedBranch
+                ? 'Se muestran productos y proveedores disponibles en la sucursal seleccionada'
+                : 'Solo se muestran productos y proveedores disponibles en esta sucursal'
+              }
+            </p>
+          </div>
         )}
-      </h2>
 
-      {/* Mostrar información de la sucursal actual o seleccionada */}
-       {currentUser && (
-         <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-           <p className="text-lg font-semibold text-blue-800">
-             {currentUser.role === 'admin' && selectedBranch ? (
-               <>Sucursal seleccionada: {(() => {
-                 const sel = branches.find(b => b._id === selectedBranch);
-                 return sel ? sel.name : selectedBranch;
-               })()}</>
-             ) : currentUser.branchId ? (
-               <>Sucursal actual: {(() => {
-                 const userBranch = branches.find(b => b._id === currentUser.branchId);
-                 return userBranch ? userBranch.name : currentUser.branchId;
-               })()}</>
-             ) : (
-               'Sucursal no asignada'
-             )}
-           </p>
-           <p className="text-sm text-blue-600">
-             {currentUser.role === 'admin' && selectedBranch
-               ? 'Se muestran productos y proveedores disponibles en la sucursal seleccionada'
-               : 'Solo se muestran productos y proveedores disponibles en esta sucursal'
-             }
-           </p>
-         </div>
-       )}
+        {/* Mensaje informativo para cajeros */}
+        {!isAdmin && currentUser && (
+          <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+            <h3 className="text-lg font-semibold text-orange-800 mb-3">
+              🛒 Compras Registradas
+            </h3>
+            <div className="text-sm text-orange-700">
+              Solo se muestran proveedores y productos asignados a tu sucursal: <strong>{(() => {
+                const userBranch = branches.find(b => b._id === currentUser.branchId);
+                return userBranch ? userBranch.name : currentUser.branchId;
+              })()}</strong>
+            </div>
+          </div>
+        )}
 
-      {/* Mensaje informativo para cajeros */}
-      {!isAdmin && currentUser && (
-        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-xl">
-          <h3 className="text-lg font-semibold text-orange-800 mb-3">
-            🛒 Compras Registradas
-          </h3>
-          <div className="text-sm text-orange-700">
-            Solo se muestran proveedores y productos asignados a tu sucursal: <strong>{(() => {
-              const userBranch = branches.find(b => b._id === currentUser.branchId);
-              return userBranch ? userBranch.name : currentUser.branchId;
-            })()}</strong>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label htmlFor="person" className="block text-gray-700 text-lg font-medium mb-2">
+              Proveedor:
+            </label>
+            <select
+              id="person"
+              value={selectedPerson}
+              onChange={(e) => setModuleState(prev => ({ ...prev, selectedPerson: e.target.value }))}
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg bg-white"
+            >
+              <option value="">Selecciona un proveedor</option>
+              {filteredPersons.filter(p => p.type === 'proveedor').map(person => (
+                <option key={person._id} value={person._id}>{person.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="product" className="block text-gray-700 text-lg font-medium mb-2">
+              Producto:
+            </label>
+            <select
+              id="product"
+              value={selectedProduct}
+              onChange={handleProductSelect}
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg bg-white"
+            >
+              <option value="">Selecciona un producto</option>
+              {filteredProducts.map(product => (
+                <option key={product._id} value={product._id}>{product.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="quantity" className="block text-gray-700 text-lg font-medium mb-2">
+              Cantidad:
+            </label>
+            <input
+              type="number"
+              id="quantity"
+              value={quantity}
+              onChange={(e) => setModuleState(prev => ({ ...prev, quantity: parseInt(e.target.value, 10) }))}
+              min="1"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg"
+            />
+          </div>
+          <div className="flex items-end">
+            <label htmlFor="priceOverride" className="block text-gray-700 text-lg font-medium mb-2">
+              Precio de Compra (₲):
+            </label>
+            <input
+              type="number"
+              id="priceOverride"
+              value={priceOverride}
+              onChange={(e) => setModuleState(prev => ({ ...prev, priceOverride: e.target.value }))}
+              step="0.01"
+              placeholder="Ingresa el precio de compra"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              💰 {priceOverride ? 'Precio editable' : 'Precio sugerido del producto (editable)'}
+            </p>
+          </div>
+          <div className="flex items-end space-x-4">
+            <button
+              onClick={handleAddProductToPurchase}
+              className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Agregar al Carrito
+            </button>
+            <button
+              onClick={handleClearPurchase}
+              className="w-full px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Limpiar
+            </button>
           </div>
         </div>
-      )}
 
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
-          <label htmlFor="person" className="block text-gray-700 text-lg font-medium mb-2">
-            Proveedor:
-          </label>
-          <select
-            id="person"
-            value={selectedPerson}
-            onChange={(e) => setModuleState(prev => ({ ...prev, selectedPerson: e.target.value }))}
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg bg-white"
-          >
-            <option value="">Selecciona un proveedor</option>
-            {filteredPersons.filter(p => p.type === 'proveedor').map(person => (
-              <option key={person._id} value={person._id}>{person.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="product" className="block text-gray-700 text-lg font-medium mb-2">
-            Producto:
-          </label>
-          <select
-            id="product"
-            value={selectedProduct}
-            onChange={handleProductSelect}
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg bg-white"
-          >
-            <option value="">Selecciona un producto</option>
-            {filteredProducts.map(product => (
-              <option key={product._id} value={product._id}>{product.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="quantity" className="block text-gray-700 text-lg font-medium mb-2">
-            Cantidad:
-          </label>
-          <input
-            type="number"
-            id="quantity"
-            value={quantity}
-            onChange={(e) => setModuleState(prev => ({ ...prev, quantity: parseInt(e.target.value, 10) }))}
-            min="1"
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg"
-          />
-        </div>
-        <div className="flex items-end">
-          <label htmlFor="priceOverride" className="block text-gray-700 text-lg font-medium mb-2">
-            Precio de Compra (₲):
-          </label>
-          <input
-            type="number"
-            id="priceOverride"
-            value={priceOverride}
-            onChange={(e) => setModuleState(prev => ({ ...prev, priceOverride: e.target.value }))}
-            step="0.01"
-            placeholder="Ingresa el precio de compra"
-            className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 text-lg"
-          />
-          <p className="text-sm text-gray-500 mt-1">
-            💰 {priceOverride ? 'Precio editable' : 'Precio sugerido del producto (editable)'}
-          </p>
-        </div>
-        <div className="flex items-end space-x-4">
-          <button
-            onClick={handleAddProductToPurchase}
-            className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Agregar al Carrito
-          </button>
-          <button
-            onClick={handleClearPurchase}
-            className="w-full px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            Limpiar
-          </button>
-        </div>
-      </div>
-
-      {purchaseDetails.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Detalle de la Compra Actual:</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-xl overflow-hidden">
-              <thead className="bg-gray-100 border-b-2 border-gray-200">
-                <tr>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Producto</th>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Precio de Compra</th>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Cantidad</th>
-                  <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Subtotal</th>
-                  <th className="py-3 px-5 text-center text-md font-semibold text-gray-700">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {purchaseDetails.map(item => (
-                  <tr key={item._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
-                    <td className="py-3 px-5 text-md text-gray-800">{item.name}</td>
-                    <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.price)}</td>
-                    <td className="py-3 px-5 text-md text-gray-800">{item.quantity}</td>
-                    <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.subtotal)}</td>
-                    <td className="py-3 px-5 flex justify-center">
-                      <button
-                        onClick={() => handleRemoveProductFromPurchase(item._id)}
-                        className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </td>
+        {purchaseDetails.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">Detalle de la Compra Actual:</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-xl overflow-hidden">
+                <thead className="bg-gray-100 border-b-2 border-gray-200">
+                  <tr>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Producto</th>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Precio de Compra</th>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Cantidad</th>
+                    <th className="py-3 px-5 text-left text-md font-semibold text-gray-700">Subtotal</th>
+                    <th className="py-3 px-5 text-center text-md font-semibold text-gray-700">Acción</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {purchaseDetails.map(item => (
+                    <tr key={item._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
+                      <td className="py-3 px-5 text-md text-gray-800">{item.name}</td>
+                      <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.price)}</td>
+                      <td className="py-3 px-5 text-md text-gray-800">{item.quantity}</td>
+                      <td className="py-3 px-5 text-md text-gray-800">{formatGuarani(item.subtotal)}</td>
+                      <td className="py-3 px-5 flex justify-center">
+                        <button
+                          onClick={() => handleRemoveProductFromPurchase(item._id)}
+                          className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="text-right text-2xl font-bold text-gray-900 mt-6">
+              Total: {formatGuarani(totalPurchaseAmount)}
+            </div>
           </div>
-          <div className="text-right text-2xl font-bold text-gray-900 mt-6">
-            Total: {formatGuarani(totalPurchaseAmount)}
-          </div>
-        </div>
-      )}
+        )}
 
-      <div className="flex gap-4">
-        {!isConfirmingPurchase && (
-          <button
-            onClick={isEditing ? handleUpdatePurchase : handleConfirmPurchase}
-            className={`flex-1 px-8 py-4 text-white text-xl font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 ${
-              isEditing
+        <div className="flex gap-4">
+          {!isConfirmingPurchase && (
+            <button
+              onClick={isEditing ? handleUpdatePurchase : handleConfirmPurchase}
+              className={`flex-1 px-8 py-4 text-white text-xl font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 ${isEditing
                 ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-300'
                 : 'bg-red-600 hover:bg-red-700 focus:ring-red-300'
-            }`}
-          >
-            {isEditing ? 'Actualizar Compra' : 'Confirmar Compra'}
-          </button>
-        )}
-        {isConfirmingPurchase && (
-          <div className="flex-1 px-8 py-4 bg-red-600 text-white text-xl font-semibold rounded-xl shadow-lg flex items-center justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-            Procesando Compra...
-          </div>
-        )}
-        
-        {isEditing && (
-          <button
-            onClick={handleCancelEdit}
-            className="px-8 py-4 bg-gray-500 text-white text-xl font-semibold rounded-xl shadow-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300"
-          >
-            Cancelar Edición
-          </button>
-        )}
-      </div>
+                }`}
+            >
+              {isEditing ? 'Actualizar Compra' : 'Confirmar Compra'}
+            </button>
+          )}
+          {isConfirmingPurchase && (
+            <div className="flex-1 px-8 py-4 bg-red-600 text-white text-xl font-semibold rounded-xl shadow-lg flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+              Procesando Compra...
+            </div>
+          )}
 
-      <div className="mt-12">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-3xl font-bold text-gray-800">Historial de Compras</h3>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            {showHistory ? 'Minimizar' : 'Maximizar'}
-          </button>
+          {isEditing && (
+            <button
+              onClick={handleCancelEdit}
+              className="px-8 py-4 bg-gray-500 text-white text-xl font-semibold rounded-xl shadow-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300"
+            >
+              Cancelar Edición
+            </button>
+          )}
         </div>
-        {showHistory && (
-          (() => {
-            const historyPurchases = getPaginatedPurchases();
-            const totalFilteredPurchases = filteredPurchases.length;
 
-            return totalFilteredPurchases === 0 ? (
-              <p className="text-center text-gray-600 text-xl py-10">No hay compras registradas aún.</p>
-            ) : (
-              <div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white rounded-xl overflow-hidden">
-                    <thead className="bg-gray-100 border-b-2 border-gray-200">
-                      <tr>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">ID Compra</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Proveedor</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Fecha</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Total</th>
-                        <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Productos</th>
-                        <th className="py-4 px-6 text-center text-lg font-semibold text-gray-700">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historyPurchases.map((purchase) => (
-                        <tr key={purchase._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
-                          <td className="py-4 px-6 text-lg text-gray-800">{purchase._id}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">{getPersonName(purchase.personId)}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">{formatDate(purchase.date)}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">{formatGuarani(purchase.total)}</td>
-                          <td className="py-4 px-6 text-lg text-gray-800">
-                            <ul className="list-disc list-inside">
-                              {purchase.details.map((detail, idx) => (
-                                <li key={idx}>
-                                  {detail.name} ({detail.quantity}) — {formatGuarani(detail.price)}
-                                </li>
-                              ))}
-                            </ul>
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <div className="flex justify-center space-x-2">
-                              <button
-                                onClick={() => handleEditPurchase(purchase)}
-                                className="p-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition-all duration-200 transform hover:scale-110"
-                                title="Editar compra"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleDeletePurchase(purchase._id)}
-                                className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
-                                title="Eliminar compra"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                            </div>
-                          </td>
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-3xl font-bold text-gray-800">Historial de Compras</h3>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              {showHistory ? 'Minimizar' : 'Maximizar'}
+            </button>
+          </div>
+          {showHistory && (
+            (() => {
+              const historyPurchases = getPaginatedPurchases();
+              const totalFilteredPurchases = filteredPurchases.length;
+
+              return totalFilteredPurchases === 0 ? (
+                <p className="text-center text-gray-600 text-xl py-10">No hay compras registradas aún.</p>
+              ) : (
+                <div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-xl overflow-hidden">
+                      <thead className="bg-gray-100 border-b-2 border-gray-200">
+                        <tr>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">ID Compra</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Proveedor</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Fecha</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Total</th>
+                          <th className="py-4 px-6 text-left text-lg font-semibold text-gray-700">Productos</th>
+                          <th className="py-4 px-6 text-center text-lg font-semibold text-gray-700">Acciones</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Controles de paginación */}
-                {totalPages > 1 && (
-                  <div className="mt-6 flex justify-center items-center space-x-4">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Anterior
-                    </button>
-
-                    <div className="flex space-x-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(page => {
-                          // Mostrar páginas cercanas a la actual
-                          const diff = Math.abs(page - currentPage);
-                          return diff <= 2 || page === 1 || page === totalPages;
-                        })
-                        .map((page, index, array) => {
-                          // Agregar "..." si hay saltos
-                          const prevPage = array[index - 1];
-                          if (prevPage && page - prevPage > 1) {
-                            return (
-                              <React.Fragment key={`ellipsis-${page}`}>
-                                <span className="px-2 py-2 text-gray-500">...</span>
+                      </thead>
+                      <tbody>
+                        {historyPurchases.map((purchase) => (
+                          <tr key={purchase._id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-150">
+                            <td className="py-4 px-6 text-lg text-gray-800">{purchase._id}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">{getPersonName(purchase.personId)}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">{formatDate(purchase.date)}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">{formatGuarani(purchase.total)}</td>
+                            <td className="py-4 px-6 text-lg text-gray-800">
+                              <ul className="list-disc list-inside">
+                                {purchase.details.map((detail, idx) => (
+                                  <li key={idx}>
+                                    {detail.name} ({detail.quantity}) — {formatGuarani(detail.price)}
+                                  </li>
+                                ))}
+                              </ul>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex justify-center space-x-2">
                                 <button
-                                  onClick={() => setCurrentPage(page)}
-                                  className={`px-3 py-2 rounded-lg transition-colors ${
-                                    currentPage === page
+                                  onClick={() => handleEditPurchase(purchase)}
+                                  className="p-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition-all duration-200 transform hover:scale-110"
+                                  title="Editar compra"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePurchase(purchase._id)}
+                                  className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
+                                  title="Eliminar compra"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Controles de paginación */}
+                  {totalPages > 1 && (
+                    <div className="mt-6 flex justify-center items-center space-x-4">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Anterior
+                      </button>
+
+                      <div className="flex space-x-2">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(page => {
+                            // Mostrar páginas cercanas a la actual
+                            const diff = Math.abs(page - currentPage);
+                            return diff <= 2 || page === 1 || page === totalPages;
+                          })
+                          .map((page, index, array) => {
+                            // Agregar "..." si hay saltos
+                            const prevPage = array[index - 1];
+                            if (prevPage && page - prevPage > 1) {
+                              return (
+                                <React.Fragment key={`ellipsis-${page}`}>
+                                  <span className="px-2 py-2 text-gray-500">...</span>
+                                  <button
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-2 rounded-lg transition-colors ${currentPage === page
                                       ? 'bg-red-600 text-white'
                                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                  }`}
-                                >
-                                  {page}
-                                </button>
-                              </React.Fragment>
-                            );
-                          }
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`px-3 py-2 rounded-lg transition-colors ${
-                                currentPage === page
+                                      }`}
+                                  >
+                                    {page}
+                                  </button>
+                                </React.Fragment>
+                              );
+                            }
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-2 rounded-lg transition-colors ${currentPage === page
                                   ? 'bg-red-600 text-white'
                                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          );
-                        })}
+                                  }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          })}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Siguiente
+                      </button>
                     </div>
+                  )}
 
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Siguiente
-                    </button>
+                  {/* Información de paginación */}
+                  <div className="mt-4 text-center text-sm text-gray-600">
+                    Mostrando {historyPurchases.length} de {totalFilteredPurchases} compras
+                    {totalPages > 1 && ` (Página ${currentPage} de ${totalPages})`}
                   </div>
-                )}
-
-                {/* Información de paginación */}
-                <div className="mt-4 text-center text-sm text-gray-600">
-                  Mostrando {historyPurchases.length} de {totalFilteredPurchases} compras
-                  {totalPages > 1 && ` (Página ${currentPage} de ${totalPages})`}
                 </div>
+              );
+            })()
+          )}
+        </div>
+
+        {/* Modal de contraseña de administrador (Eliminar Compra) */}
+        {showAdminPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                Confirmar Eliminación
+              </h3>
+              <p className="text-gray-600 mb-6 text-center">
+                Para eliminar esta compra, ingresa la contraseña del administrador:
+              </p>
+              <div className="mb-6">
+                <label htmlFor="adminPassword" className="block text-gray-700 text-sm font-medium mb-2">
+                  Contraseña del Administrador:
+                </label>
+                <input
+                  type="password"
+                  id="adminPassword"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200"
+                  placeholder="Ingresa la contraseña..."
+                  disabled={isDeleting}
+                />
               </div>
-            );
-          })()
+              <div className="flex gap-4">
+                <button
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmDeleteWithPassword}
+                  disabled={isDeleting || !adminPassword.trim()}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Eliminando...
+                    </>
+                  ) : (
+                    'Eliminar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de contraseña de administrador (Editar Compra) */}
+        {showAdminPasswordModalForEdit && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                Autorizar Edición
+              </h3>
+              <p className="text-gray-600 mb-6 text-center">
+                Para editar esta compra, ingresa la contraseña del administrador:
+              </p>
+              <div className="mb-6">
+                <label htmlFor="adminPasswordForEdit" className="block text-gray-700 text-sm font-medium mb-2">
+                  Contraseña del Administrador:
+                </label>
+                <input
+                  type="password"
+                  id="adminPasswordForEdit"
+                  value={adminPasswordForEdit}
+                  onChange={(e) => setAdminPasswordForEdit(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                  placeholder="Ingresa la contraseña..."
+                  disabled={isVerifyingPassword}
+                />
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleCancelEditPassword}
+                  disabled={isVerifyingPassword}
+                  className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmEditWithPassword}
+                  disabled={isVerifyingPassword || !adminPasswordForEdit.trim()}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isVerifyingPassword ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Verificando...
+                    </>
+                  ) : (
+                    'Validar y Editar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Modal de contraseña de administrador (Eliminar Compra) */}
-      {showAdminPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Confirmar Eliminación
-            </h3>
-            <p className="text-gray-600 mb-6 text-center">
-              Para eliminar esta compra, ingresa la contraseña del administrador:
-            </p>
-            <div className="mb-6">
-              <label htmlFor="adminPassword" className="block text-gray-700 text-sm font-medium mb-2">
-                Contraseña del Administrador:
-              </label>
-              <input
-                type="password"
-                id="adminPassword"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200"
-                placeholder="Ingresa la contraseña..."
-                disabled={isDeleting}
-              />
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={handleCancelDelete}
-                disabled={isDeleting}
-                className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDeleteWithPassword}
-                disabled={isDeleting || !adminPassword.trim()}
-                className="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Eliminando...
-                  </>
-                ) : (
-                  'Eliminar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de contraseña de administrador (Editar Compra) */}
-      {showAdminPasswordModalForEdit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Autorizar Edición
-            </h3>
-            <p className="text-gray-600 mb-6 text-center">
-              Para editar esta compra, ingresa la contraseña del administrador:
-            </p>
-            <div className="mb-6">
-              <label htmlFor="adminPasswordForEdit" className="block text-gray-700 text-sm font-medium mb-2">
-                Contraseña del Administrador:
-              </label>
-              <input
-                type="password"
-                id="adminPasswordForEdit"
-                value={adminPasswordForEdit}
-                onChange={(e) => setAdminPasswordForEdit(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                placeholder="Ingresa la contraseña..."
-                disabled={isVerifyingPassword}
-              />
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={handleCancelEditPassword}
-                disabled={isVerifyingPassword}
-                className="flex-1 px-6 py-3 bg-gray-400 text-white font-semibold rounded-xl shadow-md hover:bg-gray-500 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmEditWithPassword}
-                disabled={isVerifyingPassword || !adminPasswordForEdit.trim()}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isVerifyingPassword ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Verificando...
-                  </>
-                ) : (
-                  'Validar y Editar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+
   );
 };
 

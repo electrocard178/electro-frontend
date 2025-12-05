@@ -232,8 +232,8 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
         const daySales = baseSales.filter(sale => {
           const saleDate = new Date(sale.date);
           return saleDate.getDate() === date.getDate() &&
-                 saleDate.getMonth() === date.getMonth() &&
-                 saleDate.getFullYear() === date.getFullYear();
+            saleDate.getMonth() === date.getMonth() &&
+            saleDate.getFullYear() === date.getFullYear();
         });
 
         const total = daySales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
@@ -249,7 +249,7 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
         const weekSales = baseSales.filter(sale => {
           const saleDate = new Date(sale.date);
           return getWeekNumber(saleDate) === weekNumber &&
-                 saleDate.getFullYear() === date.getFullYear();
+            saleDate.getFullYear() === date.getFullYear();
         });
 
         const total = weekSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
@@ -265,7 +265,7 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
         const monthSales = baseSales.filter(sale => {
           const saleDate = new Date(sale.date);
           return saleDate.getMonth() === date.getMonth() &&
-                 saleDate.getFullYear() === date.getFullYear();
+            saleDate.getFullYear() === date.getFullYear();
         });
 
         const total = monthSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
@@ -286,265 +286,279 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
   };
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-6xl mx-auto my-8">
-      <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Módulo de Ganancia Bruta</h2>
+    <div
+      className="h-full flex flex-col relative p-4"
+      style={{
+        backgroundImage: 'url(/fondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
 
-      {/* Info sucursal actual para cajero */}
-      {currentUser && currentUser.branchId && currentUser.role === 'cashier' && (
-        <div className="mb-6 p-4 bg-green-50 rounded-xl border border-green-200">
-          <p className="text-lg font-semibold text-green-800">
-            👤 Cajero: {currentUser.name} ({currentUser.role === 'admin' ? 'Administrador' : 'Cajero'})
-          </p>
-          <p className="text-md font-medium text-green-700">
-            🏪 Sucursal actual: {getBranchName(currentUser.branchId)}
-          </p>
-          <p className="text-sm text-green-600">
-            📊 Solo se muestran datos de ventas y compras de esta sucursal
-          </p>
-        </div>
-      )}
+      <div className="relative bg-white bg-opacity-95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl max-w-6xl mx-auto z-10 h-full overflow-auto w-full">
+        <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Módulo de Ganancia Bruta</h2>
 
-      {/* Info para admin */}
-      {currentUser && currentUser.role === 'admin' && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <p className="text-lg font-semibold text-blue-800">
-            👑 Administrador: {currentUser.name}
-          </p>
-          <p className="text-sm text-blue-600">
-            📊 {selectedBranch ? `Mostrando datos de: ${getBranchName(selectedBranch)}` : 'Mostrando datos de todas las sucursales'}
-          </p>
-        </div>
-      )}
-
-      {/* Configuración de Top N para admin */}
-      {currentUser && currentUser.role === 'admin' && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <div className="flex items-center space-x-4">
-            <label htmlFor="topN" className="text-lg font-semibold text-blue-800">
-              Mostrar:
-            </label>
-            <select
-              id="topN"
-              value={topN}
-              onChange={(e) => setTopN(Number(e.target.value))}
-              className="px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value={5}>Top 5</option>
-              <option value={10}>Top 10</option>
-              <option value={15}>Top 15</option>
-            </select>
+        {/* Info sucursal actual para cajero */}
+        {currentUser && currentUser.branchId && currentUser.role === 'cashier' && (
+          <div className="mb-6 p-4 bg-green-50 rounded-xl border border-green-200">
+            <p className="text-lg font-semibold text-green-800">
+              👤 Cajero: {currentUser.name} ({currentUser.role === 'admin' ? 'Administrador' : 'Cajero'})
+            </p>
+            <p className="text-md font-medium text-green-700">
+              🏪 Sucursal actual: {getBranchName(currentUser.branchId)}
+            </p>
+            <p className="text-sm text-green-600">
+              📊 Solo se muestran datos de ventas y compras de esta sucursal
+            </p>
           </div>
-          <p className="text-sm text-blue-600 mt-2">
-            La sucursal se selecciona desde el encabezado superior. Ajusta cuántos productos mostrar.
-          </p>
-        </div>
-      )}
+        )}
 
-      {/* Controles de filtro por rango de fechas */}
-      <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
-        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-3 md:space-y-0">
-          <div className="flex items-center space-x-2">
-            <input
-              id="filterByDateRange"
-              type="checkbox"
-              checked={filterByDateRange}
-              onChange={(e) => setFilterByDateRange(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <label htmlFor="filterByDateRange" className="text-amber-800 font-medium">Filtrar por rango de fechas</label>
+        {/* Info para admin */}
+        {currentUser && currentUser.role === 'admin' && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <p className="text-lg font-semibold text-blue-800">
+              👑 Administrador: {currentUser.name}
+            </p>
+            <p className="text-sm text-blue-600">
+              📊 {selectedBranch ? `Mostrando datos de: ${getBranchName(selectedBranch)}` : 'Mostrando datos de todas las sucursales'}
+            </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex flex-col">
-              <label className="text-sm text-amber-700 mb-1">Desde:</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                disabled={!filterByDateRange}
-                className={`px-3 py-2 border rounded-lg ${filterByDateRange ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'}`}
-                title="Fecha de inicio"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm text-amber-700 mb-1">Hasta:</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                disabled={!filterByDateRange}
-                className={`px-3 py-2 border rounded-lg ${filterByDateRange ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'}`}
-                title="Fecha de fin"
-              />
-            </div>
-            <div className="flex flex-col space-y-2">
-              <button
-                onClick={() => {
-                  const today = new Date();
-                  const yyyy = today.getFullYear();
-                  const mm = String(today.getMonth() + 1).padStart(2, '0');
-                  const dd = String(today.getDate()).padStart(2, '0');
-                  setStartDate(`${yyyy}-${mm}-${dd}`);
-                  setEndDate(`${yyyy}-${mm}-${dd}`);
-                  setFilterByDateRange(true);
-                }}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg"
+        )}
+
+        {/* Configuración de Top N para admin */}
+        {currentUser && currentUser.role === 'admin' && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <div className="flex items-center space-x-4">
+              <label htmlFor="topN" className="text-lg font-semibold text-blue-800">
+                Mostrar:
+              </label>
+              <select
+                id="topN"
+                value={topN}
+                onChange={(e) => setTopN(Number(e.target.value))}
+                className="px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
-                Hoy
+                <option value={5}>Top 5</option>
+                <option value={10}>Top 10</option>
+                <option value={15}>Top 15</option>
+              </select>
+            </div>
+            <p className="text-sm text-blue-600 mt-2">
+              La sucursal se selecciona desde el encabezado superior. Ajusta cuántos productos mostrar.
+            </p>
+          </div>
+        )}
+
+        {/* Controles de filtro por rango de fechas */}
+        <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+          <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-3 md:space-y-0">
+            <div className="flex items-center space-x-2">
+              <input
+                id="filterByDateRange"
+                type="checkbox"
+                checked={filterByDateRange}
+                onChange={(e) => setFilterByDateRange(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <label htmlFor="filterByDateRange" className="text-amber-800 font-medium">Filtrar por rango de fechas</label>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex flex-col">
+                <label className="text-sm text-amber-700 mb-1">Desde:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  disabled={!filterByDateRange}
+                  className={`px-3 py-2 border rounded-lg ${filterByDateRange ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'}`}
+                  title="Fecha de inicio"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="text-sm text-amber-700 mb-1">Hasta:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  disabled={!filterByDateRange}
+                  className={`px-3 py-2 border rounded-lg ${filterByDateRange ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'}`}
+                  title="Fecha de fin"
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    const dd = String(today.getDate()).padStart(2, '0');
+                    setStartDate(`${yyyy}-${mm}-${dd}`);
+                    setEndDate(`${yyyy}-${mm}-${dd}`);
+                    setFilterByDateRange(true);
+                  }}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg"
+                >
+                  Hoy
+                </button>
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const lastWeek = new Date(today);
+                    lastWeek.setDate(today.getDate() - 7);
+                    const syyyy = lastWeek.getFullYear();
+                    const smm = String(lastWeek.getMonth() + 1).padStart(2, '0');
+                    const sdd = String(lastWeek.getDate()).padStart(2, '0');
+                    const eyyyy = today.getFullYear();
+                    const emm = String(today.getMonth() + 1).padStart(2, '0');
+                    const edd = String(today.getDate()).padStart(2, '0');
+                    setStartDate(`${syyyy}-${smm}-${sdd}`);
+                    setEndDate(`${eyyyy}-${emm}-${edd}`);
+                    setFilterByDateRange(true);
+                  }}
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg"
+                >
+                  Última semana
+                </button>
+              </div>
+              <button
+                onClick={() => setFilterByDateRange(false)}
+                className="px-3 py-2 bg-gray-200 rounded-lg self-end"
+              >
+                General
+              </button>
+            </div>
+            <div className="text-sm text-amber-700">
+              Ventas, compras y defectuosos se filtran por rango de fechas cuando está activo. La ganancia bruta es precio venta - precio compra por unidad × cantidad. Ideal para análisis de períodos específicos.
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Sección de resumen financiero */}
+          <div className="space-y-6">
+            <div className="p-6 bg-blue-50 rounded-2xl shadow-inner">
+              <h3 className="text-2xl font-semibold text-gray-700 mb-2">
+                💰 Total de Ventas{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}:
+              </h3>
+              <p className="text-5xl font-bold text-blue-600">{formatGuarani(totalSales)}</p>
+              <p className="text-sm text-blue-500 mt-2">
+                {salesForScope.length} transacciones consideradas
+              </p>
+            </div>
+
+            <div className="p-6 bg-red-50 rounded-2xl shadow-inner">
+              <h3 className="text-2xl font-semibold text-gray-700 mb-2">
+                🛒 Total de Compras{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ' (acumulado sucursal)'}:
+              </h3>
+              <p className="text-5xl font-bold text-red-600">{formatGuarani(totalPurchases)}</p>
+              <p className="text-sm text-red-500 mt-2">
+                {purchasesForScope.length} pedidos realizados
+              </p>
+            </div>
+
+            <div className="p-6 bg-orange-50 rounded-2xl shadow-inner">
+              <h3 className="text-2xl font-semibold text-gray-700 mb-2">
+                ⚠️ Pérdidas por Defectuosos{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ' (acumulado)'}:
+              </h3>
+              <p className="text-5xl font-bold text-orange-600">{formatGuarani(defectiveLoss)}</p>
+              <p className="text-sm text-orange-500 mt-2">
+                {defectiveForScope.length} registros de defectuosos
+              </p>
+            </div>
+
+            <div className="p-8 bg-green-50 rounded-2xl shadow-inner">
+              <h3 className="text-3xl font-bold text-gray-800 mb-4">
+                💰 Ganancia Bruta{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}:
+              </h3>
+              <p className="text-6xl font-extrabold text-green-600">{formatGuarani(calculateGrossProfit(salesForScope))}</p>
+              <p className="text-lg text-green-500 mt-4">
+                Precio de Venta - Precio de Compra por unidad × cantidad
+              </p>
+              <p className="text-sm text-green-600 mt-2">
+                Perfecto para análisis de períodos específicos y cálculo de ganancias reales
+              </p>
+            </div>
+
+          </div>
+
+          {/* Sección de estadísticas */}
+          <div className="space-y-8">
+            {/* Selector de rango de tiempo */}
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => setTimeRange('daily')}
+                className={`px-4 py-2 rounded-lg ${timeRange === 'daily' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              >
+                Diario
               </button>
               <button
-                onClick={() => {
-                  const today = new Date();
-                  const lastWeek = new Date(today);
-                  lastWeek.setDate(today.getDate() - 7);
-                  const syyyy = lastWeek.getFullYear();
-                  const smm = String(lastWeek.getMonth() + 1).padStart(2, '0');
-                  const sdd = String(lastWeek.getDate()).padStart(2, '0');
-                  const eyyyy = today.getFullYear();
-                  const emm = String(today.getMonth() + 1).padStart(2, '0');
-                  const edd = String(today.getDate()).padStart(2, '0');
-                  setStartDate(`${syyyy}-${smm}-${sdd}`);
-                  setEndDate(`${eyyyy}-${emm}-${edd}`);
-                  setFilterByDateRange(true);
-                }}
-                className="px-3 py-2 bg-green-600 text-white rounded-lg"
+                onClick={() => setTimeRange('weekly')}
+                className={`px-4 py-2 rounded-lg ${timeRange === 'weekly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
               >
-                Última semana
+                Semanal
+              </button>
+              <button
+                onClick={() => setTimeRange('monthly')}
+                className={`px-4 py-2 rounded-lg ${timeRange === 'monthly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              >
+                Mensual
               </button>
             </div>
-            <button
-              onClick={() => setFilterByDateRange(false)}
-              className="px-3 py-2 bg-gray-200 rounded-lg self-end"
-            >
-              General
-            </button>
-          </div>
-          <div className="text-sm text-amber-700">
-            Ventas, compras y defectuosos se filtran por rango de fechas cuando está activo. La ganancia bruta es precio venta - precio compra por unidad × cantidad. Ideal para análisis de períodos específicos.
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Sección de resumen financiero */}
-        <div className="space-y-6">
-          <div className="p-6 bg-blue-50 rounded-2xl shadow-inner">
-            <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-              💰 Total de Ventas{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}:
-            </h3>
-            <p className="text-5xl font-bold text-blue-600">{formatGuarani(totalSales)}</p>
-            <p className="text-sm text-blue-500 mt-2">
-              {salesForScope.length} transacciones consideradas
-            </p>
-          </div>
-
-          <div className="p-6 bg-red-50 rounded-2xl shadow-inner">
-            <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-              🛒 Total de Compras{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ' (acumulado sucursal)'}:
-            </h3>
-            <p className="text-5xl font-bold text-red-600">{formatGuarani(totalPurchases)}</p>
-            <p className="text-sm text-red-500 mt-2">
-              {purchasesForScope.length} pedidos realizados
-            </p>
-          </div>
-
-          <div className="p-6 bg-orange-50 rounded-2xl shadow-inner">
-            <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-              ⚠️ Pérdidas por Defectuosos{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ' (acumulado)'}:
-            </h3>
-            <p className="text-5xl font-bold text-orange-600">{formatGuarani(defectiveLoss)}</p>
-            <p className="text-sm text-orange-500 mt-2">
-              {defectiveForScope.length} registros de defectuosos
-            </p>
-          </div>
-
-          <div className="p-8 bg-green-50 rounded-2xl shadow-inner">
-            <h3 className="text-3xl font-bold text-gray-800 mb-4">
-              💰 Ganancia Bruta{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}:
-            </h3>
-            <p className="text-6xl font-extrabold text-green-600">{formatGuarani(calculateGrossProfit(salesForScope))}</p>
-            <p className="text-lg text-green-500 mt-4">
-              Precio de Venta - Precio de Compra por unidad × cantidad
-            </p>
-            <p className="text-sm text-green-600 mt-2">
-              Perfecto para análisis de períodos específicos y cálculo de ganancias reales
-            </p>
-          </div>
-
-        </div>
-
-        {/* Sección de estadísticas */}
-        <div className="space-y-8">
-          {/* Selector de rango de tiempo */}
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={() => setTimeRange('daily')}
-              className={`px-4 py-2 rounded-lg ${timeRange === 'daily' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-            >
-              Diario
-            </button>
-            <button
-              onClick={() => setTimeRange('weekly')}
-              className={`px-4 py-2 rounded-lg ${timeRange === 'weekly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-            >
-              Semanal
-            </button>
-            <button
-              onClick={() => setTimeRange('monthly')}
-              className={`px-4 py-2 rounded-lg ${timeRange === 'monthly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-            >
-              Mensual
-            </button>
-          </div>
-
-          {/* Gráfico de ventas */}
-          <div className="bg-white p-4 rounded-xl shadow-md">
-            <h3 className="text-xl font-semibold mb-4 text-center">
-              Ventas {timeRange === 'daily' ? 'diarias' : timeRange === 'weekly' ? 'semanales' : 'mensuales'}
-              {filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => formatGuarani(value)} />
-                  <Legend />
-                  <Bar dataKey="ventas" fill="#8884d8" name="Ventas" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Productos más vendidos */}
-          <div className="bg-white p-4 rounded-xl shadow-md">
-            <h3 className="text-xl font-semibold mb-4 text-center">Productos más vendidos (por sucursal)</h3>
-            <div className="h-64">
-              {topProducts.length > 0 ? (
+            {/* Gráfico de ventas */}
+            <div className="bg-white p-4 rounded-xl shadow-md">
+              <h3 className="text-xl font-semibold mb-4 text-center">
+                Ventas {timeRange === 'daily' ? 'diarias' : timeRange === 'weekly' ? 'semanales' : 'mensuales'}
+                {filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}
+              </h3>
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topProducts} layout="vertical" margin={{ left: 60 }}>
+                  <BarChart data={salesData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="name" width={150} />
-                    <Tooltip formatter={(value, name) => {
-                      if (name === 'quantity') return [`${value} unidades`, 'Unidades'];
-                      return [formatGuarani(value), 'Ingresos'];
-                    }} />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatGuarani(value)} />
                     <Legend />
-                    <Bar dataKey="quantity" name="Unidades" fill="#8884d8" />
-                    <Bar dataKey="total" name="Ingresos (₲)" fill="#00C49F" />
+                    <Bar dataKey="ventas" fill="#8884d8" name="Ventas" />
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-500">No hay datos de productos vendidos</p>
-                </div>
-              )}
+              </div>
+            </div>
+
+            {/* Productos más vendidos */}
+            <div className="bg-white p-4 rounded-xl shadow-md">
+              <h3 className="text-xl font-semibold mb-4 text-center">Productos más vendidos (por sucursal)</h3>
+              <div className="h-64">
+                {topProducts.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topProducts} layout="vertical" margin={{ left: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis type="category" dataKey="name" width={150} />
+                      <Tooltip formatter={(value, name) => {
+                        if (name === 'quantity') return [`${value} unidades`, 'Unidades'];
+                        return [formatGuarani(value), 'Ingresos'];
+                      }} />
+                      <Legend />
+                      <Bar dataKey="quantity" name="Unidades" fill="#8884d8" />
+                      <Bar dataKey="total" name="Ingresos (₲)" fill="#00C49F" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-gray-500">No hay datos de productos vendidos</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
   );
 };
 
