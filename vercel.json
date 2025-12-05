@@ -16,7 +16,7 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://backend-sistema-vapoenergy.onrender.com/api",
+    "REACT_APP_API_URL": "https://electro-backend-15a1.onrender.com/api",
     "REACT_APP_ENVIRONMENT": "production",
     "REACT_APP_DISABLE_LOGS": "true"
   },

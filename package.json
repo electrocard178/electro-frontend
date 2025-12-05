@@ -1,5 +1,5 @@
 {
-  "name": "sistema-vapoenergy-frontend",
+  "name": "electrocard-frontend",
   "version": "1.0.0",
   "scripts": {
     "start": "react-scripts start",

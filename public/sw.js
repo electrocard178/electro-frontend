@@ -1,5 +1,5 @@
 // Service Worker for caching static assets
-const CACHE_NAME = 'sistema-vapoenergy-v1';
+const CACHE_NAME = 'sistema-electrocard-v1';
 const STATIC_CACHE_URLS = [
   '/',
   '/static/js/bundle.js',

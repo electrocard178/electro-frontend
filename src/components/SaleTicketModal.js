@@ -59,8 +59,8 @@ const SaleTicketModal = ({ sale, onClose, getPersonName, getCashierName, formatG
         </button>
 
         <div id="ticket-content" className="text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">VAPOENERGY</h2>
-          <p className="text-gray-600 mb-4">Tu tienda de vapeadores de confianza</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">ELECTROCARD</h2>
+          <p className="text-gray-600 mb-4">Tu tienda de electrónica de confianza</p>
           <div className="border-b border-gray-300 pb-4 mb-4 text-left">
             <p className="text-lg text-gray-700 mb-1"><strong>Venta ID:</strong> {sale._id || sale.id}</p>
             <p className="text-lg text-gray-700 mb-1"><strong>Cliente:</strong> {getPersonName(sale.personId)}</p>
