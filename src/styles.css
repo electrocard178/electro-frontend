@@ -1,0 +1,25 @@
+/* stylelint-disable at-rule-no-unknown */
+/* Tailwind directives intentionally use @tailwind at-rules */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* Print styles for reports: A4/Letter sizing, repeat headers, avoid row breaks, compact/detailed modes */
+@media print {
+  @page { size: A4 portrait; margin: 20mm; }
+  /* Letter fallback handled via injected @page in JS when user selects Letter */
+  body { -webkit-print-color-adjust: exact; color-adjust: exact; background: #fff !important; }
+  .print-container { width: 100%; font-family: Arial, Helvetica, sans-serif; color: #000; }
+  table { border-collapse: collapse; width: 100%; font-size: 12pt; }
+  thead { display: table-header-group; } /* repeat header on each page */
+  tfoot { display: table-footer-group; } /* repeat footer on each page */
+  tr { page-break-inside: avoid; } /* avoid breaking rows */
+  .page { page-break-after: always; box-sizing: border-box; padding: 8mm 10mm; }
+  .report-title { text-align: center; margin-bottom: 8px; font-size: 16pt; font-weight: bold; }
+  .compact table { font-size: 10pt; }
+  .detailed table { font-size: 12pt; }
+  .no-print { display: none !important; } /* hide UI controls when printing */
+  /* Slight spacing for footers with totals */
+  .page-footer { margin-top: 8px; text-align: right; font-weight: 600; }
+}
+
+/* Keep standard tailwind utilities for screen; print CSS above will override when printing */

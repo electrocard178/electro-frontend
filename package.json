@@ -1,0 +1,43 @@
+{
+  "name": "sistema-vapoenergy-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "cross-env CI=false react-scripts build",
+    "build:production": "NODE_ENV=production npm run build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "tailwind:build": "tailwindcss -i ./src/styles.css -o ./src/tailwind-output.css --watch",
+    "prebuild": "echo 'Construyendo aplicación con Tailwind CSS optimizado...'"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.0.0",
+    "postcss": "^8",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-scripts": "^5.0.0",
+    "react-select": "^5.10.2",
+    "recharts": "^3.1.0",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
