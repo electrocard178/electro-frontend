@@ -220,4 +220,4 @@ const SaleTicketModal = ({ sale, onClose, getPersonName, getCashierName, formatG
 };
 
 export default SaleTicketModal;
-// Cambio para forzar nuevo despliegue
+
