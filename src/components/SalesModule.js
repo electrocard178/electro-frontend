@@ -990,7 +990,7 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
                 if (!isAdmin && userBranchId) {
                   displayStock = product.stockBySucursal?.[userBranchId] || 0;
                 }
-                return { value: product._id, label: `${product.name} - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}` };
+                return { value: product._id, label: `${product.name} (${product.category}) - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}` };
               })() : null}
               onChange={(selectedOption) => {
                 const productId = selectedOption ? selectedOption.value : '';
@@ -1009,7 +1009,7 @@ const SalesModule = ({ persons, products, onAddSale, onEditSale, onDeleteSale, s
                 }
                 return {
                   value: product._id,
-                  label: `${product.name} - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}`
+                  label: `${product.name} (${product.category}) - Stock: ${displayStock} ${isAdmin ? '(Total)' : `(Sucursal: ${branches.find(b => b._id === userBranchId)?.name || 'Asignada'})`}`
                 };
               })}
               placeholder="Selecciona un producto"
