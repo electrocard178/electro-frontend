@@ -27,9 +27,13 @@ const SalesModule = ({ persons, products, services = [], onAddSale, onEditSale, 
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isProcessingSale, setIsProcessingSale] = useState(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [currentSale, setCurrentSale] = useState(null);
 
   const isAdmin = currentUser && currentUser.role === 'admin';
   const userBranchId = currentUser?.branchId;
+
+  const formatGuarani = (amount) => `₲ ${amount.toLocaleString()}`;
 
   // --- 1. FILTER LOGIC ---
   const posItems = useMemo(() => {
@@ -94,6 +98,7 @@ const SalesModule = ({ persons, products, services = [], onAddSale, onEditSale, 
     if (!selectedPerson || saleDetails.length === 0) return alert('Seleccione cliente y ítems.');
 
     const total = calculateTotal();
+    const change = paymentMethod === 'efectivo' ? parseFloat(amountReceived) - total : 0;
 
     // Validations for payment amounts
     if (paymentMethod === 'efectivo') {
@@ -135,6 +140,7 @@ const SalesModule = ({ persons, products, services = [], onAddSale, onEditSale, 
       amountReceived: paymentMethod === 'efectivo' ? parseFloat(amountReceived) : undefined,
       cashAmount: paymentMethod === 'mixto' ? parseFloat(cashAmount) : undefined,
       cardAmount: paymentMethod === 'mixto' ? parseFloat(cardAmount) : undefined,
+      change,
     };
 
     try {
@@ -151,7 +157,8 @@ const SalesModule = ({ persons, products, services = [], onAddSale, onEditSale, 
           cashAmount: '',
           cardAmount: ''
         });
-        alert('Venta Exitosa');
+        setCurrentSale(res.sale);
+        setShowTicketModal(true);
       }
     } catch (e) {
       console.error(e);
@@ -383,10 +390,10 @@ const SalesModule = ({ persons, products, services = [], onAddSale, onEditSale, 
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex-1 flex flex-col overflow-hidden">
               <div className="grid grid-cols-12 gap-4 p-5 bg-slate-50 border-b border-slate-200 text-xs font-black text-slate-400 uppercase tracking-widest">
                 <div className="col-span-2">Fecha</div>
-                <div className="col-span-3">Cliente</div>
-                <div className="col-span-3">Peluquero / Staff</div>
+                <div className="col-span-2">Cliente</div>
+                <div className="col-span-3">Detalles</div>
                 <div className="col-span-2 text-right">Monto</div>
-                <div className="col-span-2 text-right">Acciones</div>
+                <div className="col-span-3 text-right">Acciones</div>
               </div>
 
               <div className="flex-1 overflow-y-auto">
@@ -398,17 +405,19 @@ const SalesModule = ({ persons, products, services = [], onAddSale, onEditSale, 
                       <div className="col-span-2 text-xs font-bold text-slate-500">
                         {new Date(sale.date).toLocaleDateString()}
                       </div>
-                      <div className="col-span-3 font-bold text-slate-800 truncate">
+                      <div className="col-span-2 font-bold text-slate-800 truncate">
                         {getPersonName(sale.personId)}
                       </div>
-                      <div className="col-span-3 font-medium text-slate-600 truncate flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px]">💈</span>
-                        {getUserName(sale.cashierId)}
+                      <div className="col-span-3 text-xs font-bold text-slate-600 truncate">
+                        {sale.details.map(d => `${d.isService ? '✂️' : '📦'} ${d.name} x${d.quantity}`).join(', ')}
                       </div>
                       <div className="col-span-2 text-right font-mono font-bold text-green-600">
                         ₲ {sale.total.toLocaleString()}
                       </div>
-                      <div className="col-span-2 text-right opacity-50 hover:opacity-100">
+                      <div className="col-span-3 text-right opacity-50 hover:opacity-100">
+                        <button onClick={() => { setCurrentSale(sale); setShowTicketModal(true); }} className="text-blue-500 font-bold text-xs bg-blue-50 px-3 py-1 rounded-lg hover:bg-blue-100 mr-2">
+                          VER TICKET
+                        </button>
                         {isAdmin && (
                           <button onClick={() => { setPendingDeleteId(sale._id); setShowAdminPasswordModal(true); }} className="text-red-500 font-bold text-xs bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100">
                             ELIMINAR
@@ -452,6 +461,17 @@ const SalesModule = ({ persons, products, services = [], onAddSale, onEditSale, 
               </div>
             </div>
           </div>
+        )}
+
+        {/* Ticket Modal */}
+        {showTicketModal && (
+          <SaleTicketModal
+            sale={currentSale}
+            onClose={() => setShowTicketModal(false)}
+            getPersonName={getPersonName}
+            getCashierName={getUserName}
+            formatGuarani={formatGuarani}
+          />
         )}
 
       </div>
