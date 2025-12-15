@@ -169,7 +169,7 @@ const AppContent = () => {
   const handleNavigate = (page) => {
     if (checkAccess(page)) {
       setCurrentPage(page);
-      if (['sales', 'purchases', 'products'].includes(page)) {
+      if (['purchases', 'products'].includes(page)) {
         loadDataFromAPI();
       }
     } else {
@@ -239,6 +239,28 @@ const AppContent = () => {
     setDefectiveProducts(data);
   };
 
+  const handleAddDefectiveProduct = async (defectiveProduct) => {
+    try {
+      await defectiveProductService.create(token, currentUser, defectiveProduct);
+      await loadDataFromAPI();
+      return { success: true };
+    } catch (error) {
+      console.error('Error adding defective product:', error);
+      alert(error.message);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const handleDeleteDefectiveProduct = async (id, password) => {
+    try {
+      await defectiveProductService.delete(token, currentUser, id, password);
+      await loadDataFromAPI();
+    } catch (error) {
+      console.error('Error deleting defective product:', error);
+      alert(error.message);
+    }
+  };
+
   const renderPage = () => {
     const LoadingFallback = () => <div className="p-10">Cargando...</div>;
 
@@ -304,7 +326,17 @@ const AppContent = () => {
                 <BranchList branches={branches} onEdit={setEditingBranch} onDelete={async (id) => { await branchService.delete(token, currentUser, id); loadDataFromAPI(); }} onAdd={() => setEditingBranch({})} users={users} />
               );
             case 'defective':
-              return <DefectiveProductsModule defectiveProducts={defectiveProducts} products={products} users={users} currentUser={currentUser} token={token} onRefresh={handleReloadDefectiveProducts} />;
+              return <DefectiveProductsModule
+                products={products}
+                persons={persons}
+                users={users}
+                branches={branches}
+                selectedBranch={selectedBranch}
+                currentUser={currentUser}
+                onAddDefectiveProduct={handleAddDefectiveProduct}
+                onDeleteDefectiveProduct={handleDeleteDefectiveProduct}
+                onReloadDefectiveProducts={handleReloadDefectiveProducts}
+              />;
             case 'test-connection':
               return <TestConnection />;
             default:

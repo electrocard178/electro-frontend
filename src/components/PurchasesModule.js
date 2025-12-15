@@ -41,9 +41,15 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
     let result = purchases;
     // ... Implement branch filtering similar to original ...
     if (isAdmin && selectedBranch) {
-      result = result.filter(p => String(p.branchId || p.branch?._id) === String(selectedBranch));
+      result = result.filter(p => {
+        const bId = p.branchId?._id || p.branchId || p.branch?._id || p.branch;
+        return String(bId) === String(selectedBranch);
+      });
     } else if (!isAdmin && currentUser?.branchId) {
-      result = result.filter(p => String(p.branchId || p.branch?._id) === String(currentUser.branchId));
+      result = result.filter(p => {
+        const bId = p.branchId?._id || p.branchId || p.branch?._id || p.branch;
+        return String(bId) === String(currentUser.branchId);
+      });
     }
     return result;
   }, [purchases, currentUser, selectedBranch, isAdmin]);
@@ -254,20 +260,33 @@ const PurchasesModule = ({ persons, products, onAddPurchase, onEditPurchase, onD
                     {typeof purchase.personId === 'object' ? purchase.personId?.name : 'Proveedor'}
                   </h4>
                 </div>
-                <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black">
-                  {new Date(purchase.date).toLocaleDateString()}
-                </span>
+                <div className="text-right">
+                  <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black block mb-1">
+                    {new Date(purchase.date).toLocaleDateString()}
+                  </span>
+                  {/* Debug/Info purpose: show branch name if available could be useful, but keeping minimal */}
+                </div>
               </div>
 
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Items</span>
-                  <span className="font-bold text-slate-700">{purchase.details.length}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Total</span>
-                  <span className="font-black text-green-600">₲ {purchase.total.toLocaleString()}</span>
-                </div>
+              <div className="space-y-2 mb-6 border-t border-b border-slate-50 py-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Detalle de Compra</div>
+                {purchase.details && purchase.details.length > 0 ? (
+                  <ul className="space-y-1">
+                    {purchase.details.map((d, i) => (
+                      <li key={i} className="flex justify-between text-sm text-slate-600">
+                        <span className="truncate pr-2">• {d.name}</span>
+                        <span className="font-bold whitespace-nowrap">x{d.quantity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-sm text-slate-400 italic">Sin detalles</span>
+                )}
+              </div>
+
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500 font-bold">Total Pagado</span>
+                <span className="font-black text-green-600 text-lg">₲ {purchase.total.toLocaleString()}</span>
               </div>
 
               {/* Actions */}

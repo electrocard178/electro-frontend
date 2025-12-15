@@ -3,6 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { defectiveProductService } from '../services/apiService';
 
 const DefectiveProductsModule = ({ products, persons, users = [], branches = [], selectedBranch, onAddDefectiveProduct, onReloadDefectiveProducts, currentUser = null, onDeleteDefectiveProduct }) => {
+  const { token } = useAuth();
+
+  // Estados para selección y formulario
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -11,7 +14,7 @@ const DefectiveProductsModule = ({ products, persons, users = [], branches = [],
   const [isReloading, setIsReloading] = useState(false);
   const [defectiveProductsHistory, setDefectiveProductsHistory] = useState([]); // Historial desde la BD
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [filteredProducts, setFilteredProducts] = useState(products); // Productos filtrados por sucursal
+  const [filteredProducts, setFilteredProducts] = useState(products || []); // Productos filtrados por sucursal
   const [filteredSuppliers, setFilteredSuppliers] = useState([]); // Proveedores filtrados por sucursal
 
   // Estados para eliminación
@@ -20,31 +23,10 @@ const DefectiveProductsModule = ({ products, persons, users = [], branches = [],
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Validaciones iniciales
-  if (!Array.isArray(products) || !Array.isArray(persons) || !currentUser || (!currentUser._id && !currentUser.id)) {
-    return (
-      <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto my-8">
-        <div className="text-center py-10">
-          <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-6 max-w-md mx-auto">
-            <div className="text-yellow-800 mb-4">
-              <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Acceso requerido</h3>
-            <p className="text-yellow-700 text-sm">
-              Para acceder a productos defectuosos, necesitas estar logueado correctamente.
-              <br />
-              <strong>Por favor, inicia sesión nuevamente.</strong>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const userId = currentUser ? (currentUser._id || currentUser.id) : null;
 
-  const userId = currentUser._id || currentUser.id;
-  const { token } = useAuth();
+  // Validaciones iniciales - MOVIDO ABAJO DE HOOKS
+  const isInvalid = !Array.isArray(products) || !Array.isArray(persons) || !currentUser || (!currentUser._id && !currentUser.id);
 
   // Función para cargar el historial de productos defectuosos
   const loadDefectiveProductsHistory = async () => {
@@ -297,6 +279,28 @@ const DefectiveProductsModule = ({ products, persons, users = [], branches = [],
     setDeletePassword('');
     setItemToDelete(null);
   };
+
+  if (isInvalid) {
+    return (
+      <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-4xl mx-auto my-8">
+        <div className="text-center py-10">
+          <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-6 max-w-md mx-auto">
+            <div className="text-yellow-800 mb-4">
+              <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Acceso requerido</h3>
+            <p className="text-yellow-700 text-sm">
+              Para acceder a productos defectuosos, necesitas estar logueado correctamente.
+              <br />
+              <strong>Por favor, inicia sesión nuevamente.</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

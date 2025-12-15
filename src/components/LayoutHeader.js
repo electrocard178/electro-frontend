@@ -37,7 +37,7 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
   };
 
   return (
-    <header className="w-full bg-white shadow-sm border-b-4 border-red-600 h-16 flex items-center px-4 justify-between z-30">
+    <header className="w-full bg-white shadow-sm border-b-4 border-red-600 h-16 flex items-center px-4 justify-between relative z-50">
       <div className="flex items-center">
         {/* Hamburger Button (Mobile & Desktop to toggle collapse if needed, but mainly Mobile) */}
         <button
@@ -64,7 +64,7 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
               </span>
             )}
 
-            {isAdmin && (
+            {currentUser && branches.length > 0 && (
               <div className="relative">
                 <button
                   onClick={toggleBranchDropdown}
@@ -80,8 +80,8 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
 
                 {isBranchDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setIsBranchDropdownOpen(false)}></div>
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 border border-gray-100 py-1">
+                    <div className="fixed inset-0 z-40" onClick={() => setIsBranchDropdownOpen(false)}></div>
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-50 border border-gray-100 py-1">
                       <button
                         onClick={() => selectBranch('')}
                         className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${!selectedBranch ? 'text-red-600 font-bold' : 'text-gray-700'}`}

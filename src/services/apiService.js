@@ -117,14 +117,7 @@ export const personService = {
 // Servicio de sucursales
 export const branchService = {
   getAll: (token, currentUser) => {
-    const cacheKey = 'branches';
-    if (cache.has(cacheKey)) {
-      return Promise.resolve(cache.get(cacheKey));
-    }
-    return api.get('/branches', token, currentUser).then(result => {
-      cache.set(cacheKey, result);
-      return result;
-    });
+    return api.get('/branches', token, currentUser);
   },
   getById: (token, currentUser, id) => api.get(`/branches/${id}`, token, currentUser),
   create: (token, currentUser, branchData) => {
