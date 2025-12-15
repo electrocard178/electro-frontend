@@ -74,6 +74,25 @@ export const productService = {
   },
 };
 
+// Servicio de categorías de productos
+export const productCategoryService = {
+  getAll: (token, currentUser) => api.get('/product-categories', token, currentUser),
+  getById: (token, currentUser, id) => api.get(`/product-categories/${id}`, token, currentUser),
+  create: (token, currentUser, categoryData) => api.post('/product-categories', categoryData, token, currentUser),
+  update: (token, currentUser, id, categoryData) => api.put(`/product-categories/${id}`, categoryData, token, currentUser),
+  delete: (token, currentUser, id) => api.delete(`/product-categories/${id}`, null, token, currentUser),
+};
+
+// Servicio de servicios (Servicios de barbería)
+export const serviceService = {
+  getAll: (token, currentUser) => api.get('/services', token, currentUser),
+  getById: (token, currentUser, id) => api.get(`/services/${id}`, token, currentUser),
+  create: (token, currentUser, serviceData) => api.post('/services', serviceData, token, currentUser),
+  update: (token, currentUser, id, serviceData) => api.put(`/services/${id}`, serviceData, token, currentUser),
+  delete: (token, currentUser, id) => api.delete(`/services/${id}`, null, token, currentUser),
+};
+
+
 // Servicio de personas
 export const personService = {
   getAll: (token, currentUser, params = {}) => {
@@ -221,23 +240,5 @@ export const defectiveProductService = {
     }
     const data = password ? { adminPassword: password } : null;
     return api.delete(`/defective-products/${id}`, data, token, currentUser);
-  },
-  getSuppliersByBranch: (token, currentUser, branchId) => api.get(`/defective-products/suppliers/${branchId}`, token, currentUser),
-};
-
-// Servicio de categorías de productos
-export const productCategoryService = {
-  getAll: (token, currentUser) => api.get('/product-categories', token, currentUser),
-  getById: (token, currentUser, id) => api.get(`/product-categories/${id}`, token, currentUser),
-  create: (token, currentUser, categoryData) => api.post('/product-categories', categoryData, token, currentUser),
-  update: (token, currentUser, id, categoryData) => api.put(`/product-categories/${id}`, categoryData, token, currentUser),
-  delete: (token, currentUser, id) => {
-    if (!id) {
-      throw new Error('ID de la categoría requerido para eliminación');
-    }
-    if (!token) {
-      throw new Error('Token de autenticación requerido para eliminación');
-    }
-    return api.delete(`/product-categories/${id}`, null, token, currentUser);
   },
 };

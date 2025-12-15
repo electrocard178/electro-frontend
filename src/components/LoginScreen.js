@@ -124,67 +124,77 @@ const LoginScreen = ({ onLogin, users = [], branches = [] }) => {
       <div className="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm"></div>
 
       {/* Card de login con glassmorphism */}
-      <div className="relative bg-white bg-opacity-95 backdrop-blur-md p-10 rounded-3xl shadow-2xl max-w-md w-full border border-white border-opacity-20">
+      <div className="relative bg-white bg-opacity-95 backdrop-blur-md p-10 rounded-3xl shadow-2xl max-w-md w-full border-t-8 border-red-600 overflow-hidden">
+        {/* Barber Pole Stripe Decoration (Top) */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-white to-red-600 opacity-80"></div>
+
         <div className="text-center mb-8">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <img
-              src="/logo.png"
-              alt="Electrocard Logo"
-              className="h-24 w-auto object-contain drop-shadow-lg"
-            />
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center font-bold text-4xl shadow-lg border-4 border-blue-900 text-red-600">
+              💈
+            </div>
           </div>
 
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Electro ⚡ Car
+          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-900 via-red-600 to-blue-900 bg-clip-text text-transparent mb-2 tracking-tight">
+            Barber Shop
           </h1>
-          <p className="text-gray-600 text-lg font-medium">
+          <p className="text-gray-500 text-lg font-medium tracking-wide">
             Sistema de Gestión
           </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-gray-700 text-lg font-medium mb-2">
-              Usuario:
+            <label htmlFor="username" className="block text-gray-700 text-md font-bold mb-2 ml-1">
+              Usuario
             </label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-lg bg-white bg-opacity-90"
-              placeholder="Nombre de usuario"
+              className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition duration-200 text-lg bg-gray-50 bg-opacity-50"
+              placeholder="Ej: admin"
               required
               disabled={loading}
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-gray-700 text-lg font-medium mb-2">
-              Contraseña:
+            <label htmlFor="password" className="block text-gray-700 text-md font-bold mb-2 ml-1">
+              Contraseña
             </label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-lg bg-white bg-opacity-90"
-              placeholder="Contraseña"
+              className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition duration-200 text-lg bg-gray-50 bg-opacity-50"
+              placeholder="••••••••"
               required
               disabled={loading}
             />
           </div>
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-              <p className="text-red-600 text-center text-md font-semibold">{error}</p>
+            <div className="bg-red-50 border-l-4 border-red-500 rounded-r-xl p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
+              </div>
             </div>
           )}
           <button
             type="submit"
             disabled={loading || (blockedUntil && Date.now() < blockedUntil)}
-            className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xl font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full px-8 py-4 bg-gradient-to-r from-blue-900 to-red-700 text-white text-xl font-bold rounded-xl shadow-lg hover:from-blue-800 hover:to-red-800 transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {loading ? '🔄 Conectando...' : (blockedUntil && Date.now() < blockedUntil) ? '⏳ Bloqueado temporalmente' : 'Iniciar Sesión'}
+            {loading ? '🔄 Iniciando...' : (blockedUntil && Date.now() < blockedUntil) ? '⏳ Espere...' : 'Ingresar al Sistema'}
           </button>
         </form>
       </div>

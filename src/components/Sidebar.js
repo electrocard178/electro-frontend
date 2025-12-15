@@ -5,17 +5,18 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, currentUser, onLogo
 
     const navItems = [
         { id: 'dashboard', label: 'Inicio', icon: '🏠' },
-        { id: 'persons', label: 'Personas', icon: '👥' },
+        { id: 'persons', label: 'Clientes', icon: '👥' }, // Renamed Personas to Clientes for better context
         { id: 'products', label: 'Productos', icon: '📦' },
+        { id: 'services', label: 'Servicios', icon: '✂️' },
         { id: 'sales', label: 'Ventas', icon: '🛒' },
         { id: 'purchases', label: 'Compras', icon: '🛍️' },
         { id: 'reports', label: 'Reportes', icon: '📊' },
-        { id: 'profit', label: 'Ganancias', icon: '💰' },
+        { id: 'profits', label: 'Ganancias', icon: '💰' },
         { id: 'defective', label: 'Defectuosos', icon: '⚠️' },
     ];
 
     const adminItems = [
-        { id: 'users', label: 'Usuarios', icon: '👤' },
+        { id: 'users', label: 'Peluqueros / Staff', icon: '💈' }, // Rebranded Usuarios
         { id: 'branches', label: 'Sucursales', icon: '🏢' },
     ];
 
@@ -41,17 +42,21 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, currentUser, onLogo
         fixed md:static inset-y-0 left-0 z-50
         w-64 bg-slate-900 text-white shadow-xl transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        flex flex-col h-full
+        flex flex-col h-full border-r border-slate-800
       `}>
                 {/* Logo / Brand */}
-                <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-xl">
-                            E
+                <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800">
+                    <div className="flex items-center space-x-3 group cursor-pointer hover:scale-105 transition-transform">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center font-bold text-3xl shadow-lg border-4 border-blue-600 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,#ef4444_5px,#ef4444_10px)] opacity-20"></div>
+                            <span className="relative z-10">💈</span>
                         </div>
-                        <span className="text-xl font-bold tracking-wide">Electrocard</span>
+                        <div className="flex flex-col">
+                            <span className="text-xl font-black tracking-tighter text-white uppercase leading-none drop-shadow-md">Barber</span>
+                            <span className="text-sm font-bold tracking-[0.2em] text-red-500 uppercase leading-none mt-1">Shop</span>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="md:hidden text-gray-400 hover:text-white">
+                    <button onClick={onClose} className="md:hidden text-gray-400 hover:text-white p-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -68,10 +73,10 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, currentUser, onLogo
                             key={item.id}
                             onClick={() => handleNavigate(item.id)}
                             className={`
-                w-full flex items-center px-3 py-3 rounded-lg transition-colors duration-200
+                w-full flex items-center px-3 py-3 rounded-lg transition-all duration-200
                 ${currentPage === item.id
-                                    ? 'bg-blue-600 text-white shadow-lg'
-                                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                                    ? 'bg-red-600 text-white shadow-lg translate-x-1'
+                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
               `}
                         >
                             <span className="mr-3 text-xl">{item.icon}</span>
@@ -90,10 +95,10 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, currentUser, onLogo
                                     key={item.id}
                                     onClick={() => handleNavigate(item.id)}
                                     className={`
-                    w-full flex items-center px-3 py-3 rounded-lg transition-colors duration-200
+                    w-full flex items-center px-3 py-3 rounded-lg transition-all duration-200
                     ${currentPage === item.id
-                                            ? 'bg-yellow-600 text-white shadow-lg'
-                                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                                            ? 'bg-blue-700 text-white shadow-lg translate-x-1'
+                                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
                   `}
                                 >
                                     <span className="mr-3 text-xl">{item.icon}</span>

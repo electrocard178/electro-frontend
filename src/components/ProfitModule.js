@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const ProfitModule = ({ sales, purchases, products, branches = [], currentUser = null, selectedBranch = null, defectiveProducts = [] }) => {
+const ProfitModule = ({ sales, purchases, products, services = [], branches = [], currentUser = null, selectedBranch = null, defectiveProducts = [], users = [] }) => {
   const [timeRange, setTimeRange] = useState('monthly');
   const [topProducts, setTopProducts] = useState([]);
   const [salesData, setSalesData] = useState([]);
   const [topN, setTopN] = useState(10);
+  const [viewMode, setViewMode] = useState('general'); // 'general' | 'products' | 'services'
 
   // Filtros por rango de fechas
   const [filterByDateRange, setFilterByDateRange] = useState(false);
@@ -146,13 +147,81 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
     return prod ? Number(prod.purchasePrice || 0) : 0;
   };
 
-  // Calcular margen bruto de ventas (sum((precioVenta - precioCompra) * cantidad))
+  // Calcular costo de insumos para un servicio
+  const getServiceCost = (serviceId) => {
+    // Buscar servicio por ID
+    let service = (services || []).find(s => String(s._id) === String(serviceId));
+
+    // Si no se encuentra por ID, intentar buscar por nombre (fallback para datos antiguos)
+    if (!service) {
+      return 0;
+    }
+
+    if (!service.supplies || service.supplies.length === 0) return 0;
+
+    return service.supplies.reduce((acc, supply) => {
+      // supply.productId puede ser objeto poblado o string ID
+      const supplyProdId = supply.productId && (supply.productId._id || supply.productId);
+      const product = products.find(p => String(p._id) === String(supplyProdId));
+      // Si encontramos producto, usamos su precio de compra actual
+      // Nota: Idealmente se usaría costo histórico, pero usaremos el actual como estimación
+      const cost = product ? Number(product.purchasePrice || 0) : 0;
+      return acc + (cost * Number(supply.quantity || 0));
+    }, 0);
+  };
+
+  // Filter logic helper
+  const isServiceItem = (det) => {
+    return det.isService === true || !!det.serviceId; // Check flag or ID presence
+  };
+
+  const shouldIncludeItem = (det) => {
+    if (viewMode === 'general') return true;
+    if (viewMode === 'products') return !isServiceItem(det);
+    if (viewMode === 'services') return isServiceItem(det);
+    return true;
+  };
+
+  // Calcular margen bruto de ventas
   const calculateGrossProfit = (list) => {
     return (list || []).reduce((saleAcc, sale) => {
       if (!Array.isArray(sale.details)) return saleAcc;
+
+      // Determinar si el vendedor es admin (para aplicar comisiones)
+      // sale.cashierId puede ser un objeto poblado o un ID string
+      const cashierMsg = sale.cashierId || {};
+      const cashierRole = cashierMsg.role || ''; // Si no está poblado, asumimos no-admin por seguridad o verificamos ID?
+      // Mejor: Si currentUser es Admin, ve todo. Pero el cálculo depende de QUIÉN HIZO la venta.
+      // Si cashierId es string, no podemos saber el role sin buscar el usuario.
+      // Asumiremos que sale.cashierId está poblado (lo está en el endpoint de sales).
+      const isSellerAdmin = cashierRole === 'admin';
+
       const saleProfit = sale.details.reduce((detAcc, det) => {
-        const purchasePrice = getPurchasePrice(det.productId || det.id || det._id);
-        const unitProfit = Number(det.price || 0) - Number(purchasePrice || 0);
+        if (!shouldIncludeItem(det)) return detAcc;
+
+        let cost = 0;
+        let revenue = Number(det.price || 0);
+
+        if (isServiceItem(det)) {
+          // Es un servicio: calcular costo de insumos + comisión empleado
+          const serviceId = det.serviceId || det.productId || det.id || det._id;
+          cost = getServiceCost(serviceId);
+
+          if (!isSellerAdmin) {
+            // Si el vendedor NO es admin, el negocio solo recibe un porcentaje (adminPercentage)
+            // Buscar la definición del servicio para ver el porcentaje
+            const service = (services || []).find(s => String(s._id) === String(serviceId));
+            const businessSharePct = service && service.adminPercentage !== undefined ? Number(service.adminPercentage) : 100; // Default 100 si no definido
+
+            // Revenue real para el negocio = Precio * %
+            revenue = revenue * (businessSharePct / 100);
+          }
+        } else {
+          // Es un producto normal - Costo es precio de compra
+          cost = getPurchasePrice(det.productId || det.id || det._id);
+        }
+
+        const unitProfit = revenue - Number(cost || 0);
         const qty = Number(det.quantity || 0);
         return detAcc + (unitProfit * qty);
       }, 0);
@@ -165,20 +234,33 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
     ? (userSales || []).filter(s => isDateInRange(s.date, startDate, endDate))
     : (userSales || []);
 
-  const totalSales = salesForScope.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+  // Calcular Total Ventas según viewMode
+  const totalSales = salesForScope.reduce((sum, sale) => {
+    if (!Array.isArray(sale.details)) return sum;
+    const saleSum = sale.details.reduce((detSum, det) => {
+      if (!shouldIncludeItem(det)) return detSum;
+      return detSum + Number(det.subtotal || 0);
+    }, 0);
+    return sum + saleSum;
+  }, 0);
 
-  // Compras filtradas por rango de fechas si está activo el filtro, sino acumuladas
+  // Compras (Solo relevantes para 'general' y 'products', 0 para 'services' - o insumos?)
+  // User asked for separation. Usually 'purchases' are stock. Logic:
+  // - If 'products': Show all purchases (stock replenishment).
+  // - If 'services': Show 0 (service costs are deducted as 'cost', not 'purchases', or we could show nothing).
+  // - If 'general': Show all.
   const purchasesForScope = filterByDateRange && startDate && endDate
     ? (userPurchases || []).filter(p => isDateInRange(p.date, startDate, endDate))
     : (userPurchases || []);
-  const totalPurchases = purchasesForScope.reduce((sum, purchase) => sum + Number(purchase.total || 0), 0);
 
-  // Pérdidas por defectuosos: costo estimado = purchasePrice * quantity (mismo ámbito que ventas)
+  const totalPurchases = viewMode === 'services' ? 0 : purchasesForScope.reduce((sum, purchase) => sum + Number(purchase.total || 0), 0);
+
+  // Pérdidas por defectuosos: Solo relevantes para productos
   const defectiveForScope = filterByDateRange && startDate && endDate
     ? (userDefective || []).filter(dp => isDateInRange(dp.dateReported || dp.createdAt, startDate, endDate))
     : (userDefective || []);
 
-  const defectiveLoss = defectiveForScope.reduce((acc, dp) => {
+  const defectiveLoss = viewMode === 'services' ? 0 : defectiveForScope.reduce((acc, dp) => {
     const price = getPurchasePrice(dp.productId);
     const qty = Number(dp.quantity || 0);
     return acc + (price * qty);
@@ -186,7 +268,7 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
 
   // Ganancia neta = margen de ventas - pérdidas por defectuosos
   const netProfit = calculateGrossProfit(salesForScope) - defectiveLoss;
-  const profitColorClass = netProfit >= 0 ? 'text-green-600' : 'text-red-600';
+  // const profitColorClass = netProfit >= 0 ? 'text-green-600' : 'text-red-600'; // Unused
 
   // Datos para gráficos y top de productos
   useEffect(() => {
@@ -198,18 +280,22 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
     const productSales = {};
     baseSales.forEach(sale => {
       if (!Array.isArray(sale.details)) return;
-      sale.details.forEach(product => {
-        const pid = product.id || product.productId || product._id || product.productId;
+      sale.details.forEach(item => {
+        if (!shouldIncludeItem(item)) return;
+
+        // ID resolution
+        const pid = item.serviceId || item.id || item.productId || item._id; // Prioritize serviceId if service
         if (!pid) return;
+
         if (productSales[pid]) {
-          productSales[pid].quantity += Number(product.quantity || 0);
-          productSales[pid].total += Number(product.subtotal || 0);
+          productSales[pid].quantity += Number(item.quantity || 0);
+          productSales[pid].total += Number(item.subtotal || 0);
         } else {
           productSales[pid] = {
             id: pid,
-            name: product.name || product.productName || 'Sin nombre',
-            quantity: Number(product.quantity || 0),
-            total: Number(product.subtotal || 0)
+            name: item.name || item.productName || 'Sin nombre',
+            quantity: Number(item.quantity || 0),
+            total: Number(item.subtotal || 0)
           };
         }
       });
@@ -221,6 +307,16 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
     // Serie temporal según timeRange
     const now = new Date();
     const data = [];
+
+    const getSalesSumForList = (list) => {
+      return list.reduce((sum, sale) => {
+        if (!Array.isArray(sale.details)) return sum;
+        return sum + sale.details.reduce((dSum, det) => {
+          if (!shouldIncludeItem(det)) return dSum;
+          return dSum + Number(det.subtotal || 0);
+        }, 0);
+      }, 0);
+    };
 
     if (timeRange === 'daily') {
       // Últimos 7 días
@@ -236,7 +332,7 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
             saleDate.getFullYear() === date.getFullYear();
         });
 
-        const total = daySales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+        const total = getSalesSumForList(daySales);
         data.push({ name: dateStr, ventas: total });
       }
     } else if (timeRange === 'weekly') {
@@ -252,7 +348,7 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
             saleDate.getFullYear() === date.getFullYear();
         });
 
-        const total = weekSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+        const total = getSalesSumForList(weekSales);
         data.push({ name: `Sem ${weekNumber}`, ventas: total });
       }
     } else {
@@ -268,13 +364,13 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
             saleDate.getFullYear() === date.getFullYear();
         });
 
-        const total = monthSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+        const total = getSalesSumForList(monthSales);
         data.push({ name: monthName, ventas: total });
       }
     }
 
     setSalesData(data);
-  }, [userSales, timeRange, selectedBranch, topN, filterByDateRange, startDate, endDate]);
+  }, [userSales, timeRange, selectedBranch, topN, filterByDateRange, startDate, endDate, viewMode]);
 
   // Número de semana
   const getWeekNumber = (d) => {
@@ -300,6 +396,31 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
 
       <div className="relative bg-white bg-opacity-95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl max-w-6xl mx-auto z-10 h-full overflow-auto w-full">
         <h2 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Módulo de Ganancia Bruta</h2>
+
+        {/* View Mode Switcher */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-gray-200 p-1 rounded-lg flex space-x-1">
+            <button
+              onClick={() => setViewMode('general')}
+              className={`px-4 py-2 rounded-md transition-shadow font-medium ${viewMode === 'general' ? 'bg-white shadow text-blue-700' : 'text-gray-600 hover:bg-gray-300'}`}
+            >
+              General
+            </button>
+            <button
+              onClick={() => setViewMode('products')}
+              className={`px-4 py-2 rounded-md transition-shadow font-medium ${viewMode === 'products' ? 'bg-white shadow text-blue-700' : 'text-gray-600 hover:bg-gray-300'}`}
+            >
+              Solo Productos
+            </button>
+            <button
+              onClick={() => setViewMode('services')}
+              className={`px-4 py-2 rounded-md transition-shadow font-medium ${viewMode === 'services' ? 'bg-white shadow text-blue-700' : 'text-gray-600 hover:bg-gray-300'}`}
+            >
+              Solo Servicios
+            </button>
+          </div>
+        </div>
+
 
         {/* Info sucursal actual para cajero */}
         {currentUser && currentUser.branchId && currentUser.role === 'cashier' && (
@@ -328,30 +449,6 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
           </div>
         )}
 
-        {/* Configuración de Top N para admin */}
-        {currentUser && currentUser.role === 'admin' && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-            <div className="flex items-center space-x-4">
-              <label htmlFor="topN" className="text-lg font-semibold text-blue-800">
-                Mostrar:
-              </label>
-              <select
-                id="topN"
-                value={topN}
-                onChange={(e) => setTopN(Number(e.target.value))}
-                className="px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value={5}>Top 5</option>
-                <option value={10}>Top 10</option>
-                <option value={15}>Top 15</option>
-              </select>
-            </div>
-            <p className="text-sm text-blue-600 mt-2">
-              La sucursal se selecciona desde el encabezado superior. Ajusta cuántos productos mostrar.
-            </p>
-          </div>
-        )}
-
         {/* Controles de filtro por rango de fechas */}
         <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
           <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-3 md:space-y-0">
@@ -374,7 +471,6 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
                   onChange={e => setStartDate(e.target.value)}
                   disabled={!filterByDateRange}
                   className={`px-3 py-2 border rounded-lg ${filterByDateRange ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'}`}
-                  title="Fecha de inicio"
                 />
               </div>
               <div className="flex flex-col">
@@ -385,7 +481,6 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
                   onChange={e => setEndDate(e.target.value)}
                   disabled={!filterByDateRange}
                   className={`px-3 py-2 border rounded-lg ${filterByDateRange ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'}`}
-                  title="Fecha de fin"
                 />
               </div>
               <div className="flex flex-col space-y-2">
@@ -423,15 +518,6 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
                   Última semana
                 </button>
               </div>
-              <button
-                onClick={() => setFilterByDateRange(false)}
-                className="px-3 py-2 bg-gray-200 rounded-lg self-end"
-              >
-                General
-              </button>
-            </div>
-            <div className="text-sm text-amber-700">
-              Ventas, compras y defectuosos se filtran por rango de fechas cuando está activo. La ganancia bruta es precio venta - precio compra por unidad × cantidad. Ideal para análisis de períodos específicos.
             </div>
           </div>
         </div>
@@ -441,44 +527,41 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
           <div className="space-y-6">
             <div className="p-6 bg-blue-50 rounded-2xl shadow-inner">
               <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-                💰 Total de Ventas{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}:
+                💰 Total de Ventas{viewMode !== 'general' ? ` (${viewMode === 'products' ? 'Productos' : 'Servicios'})` : ''}:
               </h3>
               <p className="text-5xl font-bold text-blue-600">{formatGuarani(totalSales)}</p>
-              <p className="text-sm text-blue-500 mt-2">
-                {salesForScope.length} transacciones consideradas
-              </p>
             </div>
 
-            <div className="p-6 bg-red-50 rounded-2xl shadow-inner">
-              <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-                🛒 Total de Compras{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ' (acumulado sucursal)'}:
-              </h3>
-              <p className="text-5xl font-bold text-red-600">{formatGuarani(totalPurchases)}</p>
-              <p className="text-sm text-red-500 mt-2">
-                {purchasesForScope.length} pedidos realizados
-              </p>
-            </div>
+            {viewMode !== 'services' && (
+              <div className="p-6 bg-red-50 rounded-2xl shadow-inner">
+                <h3 className="text-2xl font-semibold text-gray-700 mb-2">
+                  🛒 Total de Compras{viewMode === 'products' ? ' (Reposición)' : ''}:
+                </h3>
+                <p className="text-5xl font-bold text-red-600">{formatGuarani(totalPurchases)}</p>
+                <p className="text-sm text-red-500 mt-2">
+                  {viewMode === 'products' ? 'Gastos en reposición de stock.' : 'Acumulado compras registradas.'}
+                </p>
+              </div>
+            )}
 
-            <div className="p-6 bg-orange-50 rounded-2xl shadow-inner">
-              <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-                ⚠️ Pérdidas por Defectuosos{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ' (acumulado)'}:
-              </h3>
-              <p className="text-5xl font-bold text-orange-600">{formatGuarani(defectiveLoss)}</p>
-              <p className="text-sm text-orange-500 mt-2">
-                {defectiveForScope.length} registros de defectuosos
-              </p>
-            </div>
+            {viewMode !== 'services' && (
+              <div className="p-6 bg-orange-50 rounded-2xl shadow-inner">
+                <h3 className="text-2xl font-semibold text-gray-700 mb-2">
+                  ⚠️ Pérdidas por Defectuosos:
+                </h3>
+                <p className="text-5xl font-bold text-orange-600">{formatGuarani(defectiveLoss)}</p>
+              </div>
+            )}
 
             <div className="p-8 bg-green-50 rounded-2xl shadow-inner">
               <h3 className="text-3xl font-bold text-gray-800 mb-4">
-                💰 Ganancia Bruta{filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}:
+                💰 Ganancia Bruta {viewMode !== 'general' ? `(${viewMode === 'products' ? 'Productos' : 'Servicios'})` : ''}:
               </h3>
               <p className="text-6xl font-extrabold text-green-600">{formatGuarani(calculateGrossProfit(salesForScope))}</p>
               <p className="text-lg text-green-500 mt-4">
-                Precio de Venta - Precio de Compra por unidad × cantidad
-              </p>
-              <p className="text-sm text-green-600 mt-2">
-                Perfecto para análisis de períodos específicos y cálculo de ganancias reales
+                {viewMode === 'services'
+                  ? 'Precio Servicio - Costo Insumos'
+                  : 'Precio Venta - Precio Compra'}
               </p>
             </div>
 
@@ -488,31 +571,15 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
           <div className="space-y-8">
             {/* Selector de rango de tiempo */}
             <div className="flex justify-center space-x-4">
-              <button
-                onClick={() => setTimeRange('daily')}
-                className={`px-4 py-2 rounded-lg ${timeRange === 'daily' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              >
-                Diario
-              </button>
-              <button
-                onClick={() => setTimeRange('weekly')}
-                className={`px-4 py-2 rounded-lg ${timeRange === 'weekly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              >
-                Semanal
-              </button>
-              <button
-                onClick={() => setTimeRange('monthly')}
-                className={`px-4 py-2 rounded-lg ${timeRange === 'monthly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              >
-                Mensual
-              </button>
+              <button onClick={() => setTimeRange('daily')} className={`px-4 py-2 rounded-lg ${timeRange === 'daily' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Diario</button>
+              <button onClick={() => setTimeRange('weekly')} className={`px-4 py-2 rounded-lg ${timeRange === 'weekly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Semanal</button>
+              <button onClick={() => setTimeRange('monthly')} className={`px-4 py-2 rounded-lg ${timeRange === 'monthly' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Mensual</button>
             </div>
 
             {/* Gráfico de ventas */}
             <div className="bg-white p-4 rounded-xl shadow-md">
               <h3 className="text-xl font-semibold mb-4 text-center">
-                Ventas {timeRange === 'daily' ? 'diarias' : timeRange === 'weekly' ? 'semanales' : 'mensuales'}
-                {filterByDateRange ? ` (${formatDateHuman(startDate)} - ${formatDateHuman(endDate)})` : ''}
+                Ventas {viewMode === 'general' ? '' : (viewMode === 'products' ? 'de Productos' : 'de Servicios')} ({timeRange})
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -528,9 +595,14 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
               </div>
             </div>
 
-            {/* Productos más vendidos */}
+            {/* Productos/Servicios más vendidos */}
             <div className="bg-white p-4 rounded-xl shadow-md">
-              <h3 className="text-xl font-semibold mb-4 text-center">Productos más vendidos (por sucursal)</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-center w-full">
+                  Top {topN} {viewMode === 'services' ? 'Servicios' : 'Productos'}
+                </h3>
+              </div>
+
               <div className="h-64">
                 {topProducts.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -549,11 +621,99 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500">No hay datos de productos vendidos</p>
+                    <p className="text-gray-500">No hay datos para mostrar</p>
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Nueva Sección: Comisiones de Empleados */}
+            {viewMode !== 'products' && (
+              <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500">
+                <h3 className="text-xl font-bold mb-4 text-indigo-800">Comisiones por Servicio a Pagar (Empleados)</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-indigo-50 text-indigo-900">
+                      <tr>
+                        <th className="p-3 text-left">Peluquero / Empleado</th>
+                        <th className="p-3 text-right">Cant. Servicios</th>
+                        <th className="p-3 text-right">Total Generado</th>
+                        <th className="p-3 text-right font-bold">Comisión a Pagar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {(() => {
+                        const commissionMap = {};
+                        (salesForScope || []).forEach(sale => {
+                          if (!Array.isArray(sale.details)) return;
+
+                          // Determinar cashierre/peluquero
+                          const cashierId = getIdFromPopulatedField(sale.cashierId) || 'sin-asignar';
+                          // Buscar objeto usuario para ver rol y nombre
+                          const cashierObj = (users || []).find(u => String(u._id) === String(cashierId));
+                          const isSellerAdmin = cashierObj && cashierObj.role === 'admin';
+
+                          // Si usuario no encontrado, intentar nombre del populate de sale
+                          const cashierName = cashierObj ? cashierObj.name :
+                            (sale.cashierId && sale.cashierId.name) ? sale.cashierId.name : 'Desconocido';
+
+                          sale.details.forEach(det => {
+                            if (!isServiceItem(det)) return;
+
+                            const subtotal = Number(det.subtotal || 0);
+                            let employeeShare = 0;
+
+                            if (isSellerAdmin) {
+                              // Admin no cobra comisión (todo para el local o ganancia total)
+                              // El usuario pidió "cuanto le corresponde... al peluquero".
+                              // Si es admin, mostramos 0 o mostramos todo? 
+                              // En reportes mostramos todo como "Ganancia". 
+                              // Aquí es "Comisiones a Pagar" -> Admin no se paga comisión a sí mismo en nómina, retira ganancias.
+                              // Dejaremos en 0 para admin para resaltar EMPLEADOS.
+                              employeeShare = 0;
+                            } else {
+                              const serviceId = det.serviceId || det.productId || det.id || det._id;
+                              const service = (services || []).find(s => String(s._id) === String(serviceId));
+                              const adminPct = service && service.adminPercentage !== undefined ? Number(service.adminPercentage) : 100;
+                              const employeePct = 100 - adminPct;
+                              employeeShare = subtotal * (employeePct / 100);
+                            }
+
+                            if (employeeShare > 0) {
+                              if (!commissionMap[cashierId]) {
+                                commissionMap[cashierId] = { name: cashierName, count: 0, generated: 0, commission: 0 };
+                              }
+                              commissionMap[cashierId].count += Number(det.quantity || 1);
+                              commissionMap[cashierId].generated += subtotal;
+                              commissionMap[cashierId].commission += employeeShare;
+                            }
+                          });
+                        });
+
+                        const commissionList = Object.values(commissionMap).sort((a, b) => b.commission - a.commission);
+
+                        if (commissionList.length === 0) {
+                          return (
+                            <tr><td colSpan="4" className="p-4 text-center text-gray-500 italic">No hay comisiones generadas en este periodo.</td></tr>
+                          );
+                        }
+
+                        return commissionList.map((c, idx) => (
+                          <tr key={idx} className="hover:bg-indigo-50">
+                            <td className="p-3 font-medium text-gray-800">{c.name}</td>
+                            <td className="p-3 text-right text-gray-600">{c.count}</td>
+                            <td className="p-3 text-right text-gray-500">{formatGuarani(c.generated)}</td>
+                            <td className="p-3 text-right font-bold text-green-600 text-lg">{formatGuarani(c.commission)}</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                  <p className="mt-2 text-xs text-gray-500 text-right">* Solo se muestran empleados con comisiones &gt; 0 (Admins excluidos de esta tabla).</p>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
@@ -561,5 +721,6 @@ const ProfitModule = ({ sales, purchases, products, branches = [], currentUser =
 
   );
 };
+
 
 export default ProfitModule;

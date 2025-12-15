@@ -15,7 +15,7 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
       case 'defective': return 'Productos Defectuosos';
       case 'users': return 'Gestión de Usuarios';
       case 'branches': return 'Gestión de Sucursales';
-      default: return 'Sistema de Gestión';
+      default: return 'Barber Shop System';
     }
   };
 
@@ -37,11 +37,11 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
   };
 
   return (
-    <header className="w-full bg-white shadow-sm border-b border-gray-200 h-16 flex items-center px-4 justify-between z-30">
+    <header className="w-full bg-white shadow-sm border-b-4 border-red-600 h-16 flex items-center px-4 justify-between z-30">
       <div className="flex items-center">
         {/* Hamburger Button (Mobile & Desktop to toggle collapse if needed, but mainly Mobile) */}
         <button
-          className="mr-4 text-gray-600 hover:text-blue-600 focus:outline-none md:hidden"
+          className="mr-4 text-gray-600 hover:text-red-600 focus:outline-none md:hidden"
           onClick={onToggleSidebar}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,7 +59,7 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
         {currentUser && (
           <div className="flex items-center">
             {currentUser.branchId && !isAdmin && (
-              <span className="hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <span className="hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                 {getBranchName(currentUser.branchId)}
               </span>
             )}
@@ -68,7 +68,7 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
               <div className="relative">
                 <button
                   onClick={toggleBranchDropdown}
-                  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 focus:outline-none"
+                  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-red-600 focus:outline-none"
                 >
                   <span className="hidden md:inline">
                     {selectedBranch ? branches.find(b => b._id === selectedBranch)?.name : 'Todas las Sucursales'}
@@ -84,7 +84,7 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 border border-gray-100 py-1">
                       <button
                         onClick={() => selectBranch('')}
-                        className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${!selectedBranch ? 'text-blue-600 font-bold' : 'text-gray-700'}`}
+                        className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${!selectedBranch ? 'text-red-600 font-bold' : 'text-gray-700'}`}
                       >
                         Todas las Sucursales
                       </button>
@@ -92,7 +92,7 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
                         <button
                           key={branch._id}
                           onClick={() => selectBranch(branch._id)}
-                          className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedBranch === branch._id ? 'text-blue-600 font-bold' : 'text-gray-700'}`}
+                          className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedBranch === branch._id ? 'text-red-600 font-bold' : 'text-gray-700'}`}
                         >
                           {branch.name}
                         </button>
@@ -109,9 +109,9 @@ const LayoutHeader = ({ currentPage, onToggleSidebar, currentUser, branches = []
         <div className="flex items-center space-x-2 border-l border-gray-200 pl-4">
           <div className="hidden md:block text-right">
             <p className="text-sm font-medium text-gray-900">{currentUser?.name}</p>
-            <p className="text-xs text-gray-500">{currentUser?.role === 'admin' ? 'Admin' : 'Cajero'}</p>
+            <p className="text-xs text-gray-500">{currentUser?.role === 'admin' ? 'Admin' : 'Peluquero'}</p>
           </div>
-          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
+          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-bold border border-blue-200">
             {currentUser?.name?.charAt(0) || 'U'}
           </div>
         </div>

@@ -14,11 +14,12 @@ import { useAuth } from '../context/AuthContext';
  * Nota: implementé la lógica de análisis en el frontend (agrupar, sumar, calcular ganancias)
  *       y añadí la capacidad de pedir resúmenes al servidor (endpoints ya presentes en backend/routes/reports.js).
  */
-const ReportsModule = ({ sales = [], purchases = [], persons = [], products = [], branches = [], users = [], currentUser = null, selectedBranch = null }) => {
+const ReportsModule = ({ sales = [], purchases = [], persons = [], products = [], services = [], branches = [], users = [], currentUser = null }) => {
   const [reportType, setReportType] = useState('sales'); // sales | purchases | customers | products
   const [filteredSales, setFilteredSales] = useState([]);
   const [filteredPurchases, setFilteredPurchases] = useState([]);
   const [productAnalysis, setProductAnalysis] = useState({ topProfitable: [], topLosses: [], bestSelling: [] });
+  const [serviceAnalysis, setServiceAnalysis] = useState({ topServices: [] });
   const [topCustomers, setTopCustomers] = useState([]);
   const [frequentCustomers, setFrequentCustomers] = useState([]);
   const [serverLoading, setServerLoading] = useState(false);
@@ -46,8 +47,12 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
     sales: { currentPage: 1, rowsPerPage: 50 },
     purchases: { currentPage: 1, rowsPerPage: 50 },
     customers: { currentPage: 1, rowsPerPage: 50 },
-    products: { currentPage: 1, rowsPerPage: 50 }
+    products: { currentPage: 1, rowsPerPage: 50 },
+    services: { currentPage: 1, rowsPerPage: 50 }
   });
+
+  // State for Customer Report subdivision
+  const [customerReportMode, setCustomerReportMode] = useState('all'); // 'all' | 'sales' | 'services'
 
   const getRowsPerPage = () => {
     // Heurística simple para evitar cortes: filas por página según orientación y modo
@@ -239,6 +244,25 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
   // Helper: verificar si el usuario actual es cajero
   const isCashier = currentUser && currentUser.role === 'cashier';
 
+  // Helper: Get user/cashier name
+  const getCashierName = (cashierId) => {
+    if (!cashierId) return 'Sin asignación';
+    if (typeof cashierId === 'object' && cashierId.name) return cashierId.name;
+
+    const idStr = String(getId(cashierId));
+    const user = (users || []).find(u => String(u._id) === idStr);
+    return user ? (user.name || user.username) : `Usuario (${idStr.substring(0, 6)}...)`;
+  };
+
+  // Función auxiliar para obtener nombre del cliente en una venta (puede venir poblado o como id)
+  const getSaleCustomerName = (s) => {
+    if (!s) return 'Cliente Desconocido';
+    if (s.personId && typeof s.personId === 'object' && s.personId.name) return String(s.personId.name);
+    const pid = getId(s.personId);
+    const person = (persons || []).find(p => String(p._id) === String(pid));
+    return (person && person.name) ? String(person.name) : String(pid || 'Sin Nombre');
+  };
+
   // Export helper: array of objects -> CSV (Excel friendly)
   const exportArrayToCSV = (filename, headers, rows) => {
     const csvRows = [];
@@ -330,15 +354,8 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
       baseSales = sales || [];
       basePurchases = purchases || [];
     } else if (currentUser.role === 'admin') {
-      // Si es admin y hay una sucursal seleccionada, filtrar por esa sucursal
-      if (selectedBranch) {
-        baseSales = (sales || []).filter(s => String(getId(s.branchId)) === String(selectedBranch));
-        basePurchases = (purchases || []).filter(p => String(getId(p.branchId)) === String(selectedBranch));
-      } else {
-        // Si no hay sucursal seleccionada, mostrar todas
-        baseSales = sales || [];
-        basePurchases = purchases || [];
-      }
+      baseSales = sales || [];
+      basePurchases = purchases || [];
     } else if (currentUser.role === 'cashier' && currentUser.branchId) {
       const branchId = String(currentUser.branchId);
       baseSales = (sales || []).filter(s => String(getId(s.branchId)) === branchId);
@@ -348,14 +365,7 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
       basePurchases = [];
     }
 
-    // Función auxiliar para obtener nombre del cliente en una venta (puede venir poblado o como id)
-    const getSaleCustomerName = (s) => {
-      if (!s) return '';
-      if (s.personId && typeof s.personId === 'object' && s.personId.name) return String(s.personId.name);
-      const pid = getId(s.personId);
-      const person = (persons || []).find(p => String(p._id) === String(pid));
-      return (person && person.name) ? String(person.name) : String(pid || '');
-    };
+
 
     // Aplicar filtros de búsqueda (si existen)
     const applySaleFilters = (list) => {
@@ -378,22 +388,26 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
       }
       // Filtrar por fecha desde (dateFrom) - dateFrom es YYYY-MM-DD
       if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
         res = res.filter(s => {
           const sd = s.date ? new Date(s.date) : null;
           if (!sd || isNaN(sd.getTime())) return false;
-          // Comparar solo la parte de fecha (YYYY-MM-DD) sin conversiones de zona horaria
-          const saleDateStr = sd.toISOString().split('T')[0];
-          return saleDateStr >= dateFrom;
+          // Convertir fecha de venta (UTC) a zona local para comparación
+          const localSd = new Date(sd.getTime() - sd.getTimezoneOffset() * 60000);
+          return localSd >= from;
         });
       }
       // Filtrar por fecha hasta (dateTo) - incluir hasta fin del día
       if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
         res = res.filter(s => {
           const sd = s.date ? new Date(s.date) : null;
           if (!sd || isNaN(sd.getTime())) return false;
-          // Comparar solo la parte de fecha (YYYY-MM-DD) sin conversiones de zona horaria
-          const saleDateStr = sd.toISOString().split('T')[0];
-          return saleDateStr <= dateTo;
+          // Convertir fecha de venta (UTC) a zona local para comparación
+          const localSd = new Date(sd.getTime() - sd.getTimezoneOffset() * 60000);
+          return localSd <= to;
         });
       }
       return res;
@@ -410,21 +424,25 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
         });
       }
       if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
         res = res.filter(p => {
           const pd = p.date ? new Date(p.date) : null;
           if (!pd || isNaN(pd.getTime())) return false;
-          // Comparar solo la parte de fecha (YYYY-MM-DD) sin conversiones de zona horaria
-          const purchaseDateStr = pd.toISOString().split('T')[0];
-          return purchaseDateStr >= dateFrom;
+          // Convertir fecha de compra (UTC) a zona local para comparación
+          const localPd = new Date(pd.getTime() - pd.getTimezoneOffset() * 60000);
+          return localPd >= from;
         });
       }
       if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
         res = res.filter(p => {
           const pd = p.date ? new Date(p.date) : null;
           if (!pd || isNaN(pd.getTime())) return false;
-          // Comparar solo la parte de fecha (YYYY-MM-DD) sin conversiones de zona horaria
-          const purchaseDateStr = pd.toISOString().split('T')[0];
-          return purchaseDateStr <= dateTo;
+          // Convertir fecha de compra (UTC) a zona local para comparación
+          const localPd = new Date(pd.getTime() - pd.getTimezoneOffset() * 60000);
+          return localPd <= to;
         });
       }
       // Filtrar por proveedor (customerQuery) si aplica
@@ -449,7 +467,7 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
       setFilteredSales(baseSales);
       setFilteredPurchases(basePurchases);
     }
-  }, [sales, purchases, currentUser, filtersApplied, persons, customerQuery, productQuery, dateFrom, dateTo, selectedBranch]);
+  }, [sales, purchases, currentUser, filtersApplied, persons]);
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -457,7 +475,8 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
       sales: { ...prev.sales, currentPage: 1 },
       purchases: { ...prev.purchases, currentPage: 1 },
       customers: { ...prev.customers, currentPage: 1 },
-      products: { ...prev.products, currentPage: 1 }
+      products: { ...prev.products, currentPage: 1 },
+      services: { ...prev.services, currentPage: 1 }
     }));
   }, [filtersApplied, customerNameFilter, customerDocFilter, categoryQuery]);
 
@@ -475,6 +494,7 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
     salesToUse.forEach(sale => {
       if (!Array.isArray(sale.details)) return;
       sale.details.forEach(d => {
+        if (d.isService) return; // Skip services for product analysis
         const rawName = d.name || 'Sin nombre';
         const name = String(rawName).toLowerCase().trim();
         if (!mapByName[name]) mapByName[name] = { name: rawName, soldQuantity: 0, soldRevenue: 0, purchaseCost: 0, profit: 0, productId: d.productId || null };
@@ -531,6 +551,90 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
 
     setProductAnalysis({ topProfitable, topLosses, bestSelling });
   }, [filteredSales, filteredPurchases, sales, purchases, products]);
+
+
+  // Analyze services and hairdressers
+  useEffect(() => {
+    const salesToUse = filteredSales;
+    const serviceMap = {};
+    const hairdresserMap = {}; // Map para agrupar por peluquero (cashierId/userId)
+    const detailedServices = []; // Lista detallada para la tabla
+
+    salesToUse.forEach(sale => {
+      if (!Array.isArray(sale.details)) return;
+
+      // Filtrar items que son servicios
+      const serviceItems = sale.details.filter(d => d.isService === true || (services || []).some(s => s.name === d.name));
+      if (serviceItems.length === 0) return;
+
+      const hairdresserId = getId(sale.cashierId) || 'sin-asignar';
+      // Obtener objeto usuario completo si es posible para chequear rol
+      const cashierObj = (users || []).find(u => String(u._id) === String(hairdresserId));
+      const hairdresserName = cashierObj ? cashierObj.name : getCashierName(sale.cashierId);
+      const isHairdresserAdmin = cashierObj && cashierObj.role === 'admin';
+
+      const clientName = getSaleCustomerName(sale); // Usar helper existente
+
+      if (!hairdresserMap[hairdresserId]) {
+        hairdresserMap[hairdresserId] = { name: hairdresserName, revenue: 0, count: 0, earnings: 0 };
+      }
+
+      serviceItems.forEach(d => {
+        const name = d.name || 'Desconocido';
+        const subtotal = Number(d.subtotal || 0);
+
+        // Calcular comisión del peluquero
+        // 1. Buscar servicio para ver porcentaje
+        // d.serviceId puede no estar, buscar por nombre
+        const serviceDef = (services || []).find(s => s.name === name || (d.serviceId && String(s._id) === String(d.serviceId)));
+
+        let employeeShare = 0;
+
+        if (isHairdresserAdmin) {
+          // Si es admin, "gana" todo (revenue).
+          employeeShare = subtotal;
+        } else {
+          // Si es empleado
+          const adminPct = serviceDef && serviceDef.adminPercentage !== undefined ? Number(serviceDef.adminPercentage) : 100;
+          const employeePct = 100 - adminPct;
+          employeeShare = subtotal * (employeePct / 100);
+        }
+
+        // Agrupar por Servicio (existente)
+        if (!serviceMap[name]) serviceMap[name] = { name, quantity: 0, revenue: 0, businessRevenue: 0 };
+        serviceMap[name].quantity += Number(d.quantity || 0);
+        serviceMap[name].revenue += subtotal;
+        serviceMap[name].businessRevenue += (subtotal - employeeShare);
+
+        // Agrupar por Peluquero
+        hairdresserMap[hairdresserId].revenue += subtotal;
+        hairdresserMap[hairdresserId].count += Number(d.quantity || 0);
+        hairdresserMap[hairdresserId].earnings += employeeShare;
+
+        // Agregar a lista detallada
+        detailedServices.push({
+          date: sale.date,
+          id: sale._id,
+          serviceName: name,
+          clientName: clientName,
+          hairdresserName: hairdresserName,
+          price: d.price || 0,
+          quantity: d.quantity || 1,
+          subtotal: subtotal,
+          employeeEarnings: employeeShare,
+          businessEarnings: subtotal - employeeShare
+        });
+      });
+    });
+
+    const topServices = Object.values(serviceMap).sort((a, b) => b.revenue - a.revenue);
+    const topHairdressers = Object.values(hairdresserMap).sort((a, b) => b.earnings - a.earnings);
+
+    // Sort detailed services by date desc
+    detailedServices.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    setServiceAnalysis({ topServices, topHairdressers, detailedServices });
+  }, [filteredSales, services, users]);
 
   // Analyze customers
   useEffect(() => {
@@ -626,23 +730,6 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
     });
     const chartData = Object.values(data);
 
-    // Datos para gráfico de métodos de pago
-    const paymentData = {};
-    salesList.forEach(s => {
-      const method = s.paymentMethod || 'efectivo';
-      if (method === 'mixto') {
-        // Para pagos mixtos, dividir en efectivo y tarjeta
-        if (!paymentData['efectivo']) paymentData['efectivo'] = 0;
-        paymentData['efectivo'] += Number(s.cashAmount || 0);
-        if (!paymentData['tarjeta']) paymentData['tarjeta'] = 0;
-        paymentData['tarjeta'] += Number(s.cardAmount || 0);
-      } else {
-        if (!paymentData[method]) paymentData[method] = 0;
-        paymentData[method] += Number(s.total || 0);
-      }
-    });
-    const paymentChartData = Object.entries(paymentData).map(([method, amount]) => ({ name: method, value: amount }));
-
     // Paginación
     const { currentPage, rowsPerPage } = pagination.sales;
     const totalRows = salesList.length;
@@ -654,42 +741,22 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
     return (
       <div className="bg-white p-6 rounded-xl shadow-md">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">Ventas - Monto por Sucursal y Método de Pago</h3>
+          <h3 className="text-xl font-bold">Ventas - Monto por Sucursal</h3>
           <div className="text-sm text-gray-600">{salesList.length} ventas</div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 mb-4">
-          <div style={{ height: 300 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={val => formatGuarani(val)} />
-                <Legend />
-                <Bar dataKey="totalAmount" name="Monto (₲)" fill="#8884d8" />
-                <Bar dataKey="tickets" name="Tickets" fill="#82ca9d" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={{ height: 300 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={paymentChartData}
-                  dataKey="value"
-                  nameKey="name"
-                  outerRadius={100}
-                  label={({ payload }) => `${payload.name} (${formatGuarani(payload.value)})`}
-                  labelLine={false}
-                >
-                  {paymentChartData.map((entry, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
-                </Pie>
-                <Tooltip formatter={(value, name, props) => [formatGuarani(value), props?.payload?.name || name]} />
-                <Legend formatter={value => value} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+        <div style={{ height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip formatter={val => formatGuarani(val)} />
+              <Legend />
+              <Bar dataKey="totalAmount" name="Monto (₲)" fill="#8884d8" />
+              <Bar dataKey="tickets" name="Tickets" fill="#82ca9d" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="mt-4 flex justify-between items-center">
@@ -709,7 +776,6 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
                 <th className="p-2 text-left">Sucursal</th>
                 <th className="p-2 text-left">Cajero</th>
                 <th className="p-2 text-left">Cliente</th>
-                <th className="p-2 text-left">Método Pago</th>
                 <th className="p-2 text-right">Total</th>
                 <th className="p-2 text-left">Detalles</th>
               </tr>
@@ -722,7 +788,6 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
                   <td className="p-2">{(branches.find(b => String(b._id) === String(getId(s.branchId))) || {}).name || getId(s.branchId)}</td>
                   <td className="p-2">{(users.find(u => String(u._id) === String(getId(s.cashierId))) || {}).name || getId(s.cashierId)}</td>
                   <td className="p-2">{(persons.find(p => String(p._id) === String(getId(s.personId))) || {}).name || getId(s.personId)}</td>
-                  <td className="p-2 capitalize">{s.paymentMethod || 'efectivo'}</td>
                   <td className="p-2 text-right">{formatGuarani(s.total)}</td>
                   <td className="p-2">{Array.isArray(s.details) ? s.details.map(d => `${d.name} (x${d.quantity})`).join('; ') : ''}</td>
                 </tr>
@@ -892,11 +957,49 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
     // Calcular resumen por cliente a partir de ventas visibles (filtradas según UI/rol)
     const salesToUse = filteredSales;
     const customersMap = {};
+
     salesToUse.forEach(s => {
+      // Filtrar detalles según el modo (all, sales, services)
+      let relevantTotal = 0;
+      let hasRelevantItems = false;
+
+      if (Array.isArray(s.details)) {
+        s.details.forEach(d => {
+          const isService = d.isService === true || (services || []).some(srv => srv.name === d.name);
+
+          if (customerReportMode === 'all') {
+            relevantTotal += Number(d.subtotal || 0);
+            hasRelevantItems = true;
+          } else if (customerReportMode === 'sales') {
+            // "Ventas" mode = Products only
+            if (!isService) {
+              relevantTotal += Number(d.subtotal || 0);
+              hasRelevantItems = true;
+            }
+          } else if (customerReportMode === 'services') {
+            // "Services" mode
+            if (isService) {
+              relevantTotal += Number(d.subtotal || 0);
+              hasRelevantItems = true;
+            }
+          }
+        });
+      } else {
+        // Fallback for legacy sales without details array (treat as product sales usually)
+        if (customerReportMode === 'all' || customerReportMode === 'sales') {
+          relevantTotal = Number(s.total || 0);
+          hasRelevantItems = true;
+        }
+      }
+
+      if (!hasRelevantItems && relevantTotal === 0) return;
+
       const pid = getId(s.personId) || 'sin-cliente';
       if (!customersMap[pid]) customersMap[pid] = { personId: pid, totalSpent: 0, purchaseCount: 0, lastPurchase: null };
-      customersMap[pid].totalSpent += Number(s.total || 0);
-      customersMap[pid].purchaseCount += 1;
+
+      customersMap[pid].totalSpent += relevantTotal;
+      customersMap[pid].purchaseCount += 1; // Count visits relevant to the mode
+
       // Registrar fecha de última compra para el cliente
       try {
         const sd = s.date ? new Date(s.date) : null;
@@ -907,8 +1010,9 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
         // ignore invalid dates
       }
     });
+
     // Construir lista completa de clientes (a partir de persons prop), enriqueciendo con totales calculados y lastPurchase
-    const allClients = (persons || []).map(p => {
+    let allClients = (persons || []).map(p => {
       const id = String(p._id || p.id || '');
       const stats = customersMap[id] || { totalSpent: 0, purchaseCount: 0, lastPurchase: null };
       return {
@@ -922,6 +1026,7 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
         lastPurchase: stats.lastPurchase || null
       };
     });
+
     // También incluir clientes que aparecen en ventas pero no en la colección persons (por si vienen como id)
     Object.values(customersMap).forEach(c => {
       if (!allClients.find(ac => ac.id === String(c.personId))) {
@@ -929,14 +1034,24 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
       }
     });
 
+    // Filtrar clientes con 0 gasto si estamos en un modo específico (para no llenar la lista de ceros)
+    if (customerReportMode !== 'all') {
+      allClients = allClients.filter(c => c.totalSpent > 0);
+    }
+
     // Ordenar todos los clientes por última compra descendente (más reciente arriba)
     allClients.sort((a, b) => {
+      // Prioridad a los que compraron recientemente
       const ta = a.lastPurchase ? new Date(a.lastPurchase).getTime() : 0;
       const tb = b.lastPurchase ? new Date(b.lastPurchase).getTime() : 0;
       return tb - ta;
     });
 
-    // Aplicar filtros específicos de Clientes (nombre y documento)
+    // Calcular Tops para gráficos (siempre basados en el modo seleccionado)
+    const topBySpent = [...allClients].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 10);
+    const topByFreq = [...allClients].sort((a, b) => b.purchaseCount - a.purchaseCount).slice(0, 10);
+
+    // Aplicar filtros específicos de UI Clientes (nombre y documento)
     const filteredClients = allClients.filter(c => {
       const nameMatch = !customerNameFilter || String(c.name || '').toLowerCase().includes(String(customerNameFilter).toLowerCase().trim());
       const docMatch = !customerDocFilter || String(c.cedula || '').toLowerCase().includes(String(customerDocFilter).toLowerCase().trim());
@@ -953,41 +1068,69 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
 
     return (
       <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-xl font-bold mb-4">Clientes - Top Gastos y Todos los Clientes</h3>
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+          <h3 className="text-xl font-bold">Clientes - {customerReportMode === 'all' ? 'General' : (customerReportMode === 'sales' ? 'Consumidores de Productos' : 'Consumidores de Servicios')}</h3>
+
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setCustomerReportMode('all')}
+              className={`px-3 py-1 text-sm rounded-md transition-all ${customerReportMode === 'all' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setCustomerReportMode('sales')}
+              className={`px-3 py-1 text-sm rounded-md transition-all ${customerReportMode === 'sales' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Ventas
+            </button>
+            <button
+              onClick={() => setCustomerReportMode('services')}
+              className={`px-3 py-1 text-sm rounded-md transition-all ${customerReportMode === 'services' ? 'bg-white shadow text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Servicios
+            </button>
+          </div>
+        </div>
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div style={{ height: 300 }}>
+            <p className="text-center text-sm text-gray-500 mb-1">Mayores Compradores ({customerReportMode === 'services' ? 'Servicios' : (customerReportMode === 'sales' ? 'Productos' : 'Global')})</p>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topCustomers}>
+              <BarChart data={topBySpent}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
                 <YAxis />
                 <Tooltip formatter={val => formatGuarani(val)} />
-                <Bar dataKey="totalSpent" name="Total Gastado" fill="#8884d8" />
+                <Bar dataKey="totalSpent" name="Total Gastado" fill="#8884d8" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div style={{ height: 300 }}>
+            <p className="text-center text-sm text-gray-500 mb-1">Más Frecuentes</p>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={frequentCustomers}
+                  data={topByFreq}
                   dataKey="purchaseCount"
                   nameKey="name"
-                  outerRadius={100}
-                  label={({ payload }) => `${payload.name} (${payload.purchaseCount})`}
-                  labelLine={false}
+                  outerRadius={90}
+                  label={({ payload }) => `${payload.name.substring(0, 10)}`}
+                  labelLine={true}
                 >
-                  {frequentCustomers.map((entry, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
+                  {topByFreq.map((entry, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(value, name, props) => [`${value} compras`, props?.payload?.name || name]} />
-                <Legend formatter={value => value} />
+                <Tooltip formatter={(value, name, props) => [`${value} visitas`, props?.payload?.name || name]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="mt-2">
+        <div className="mt-2 text-sm text-gray-500 italic mb-2">
+          * Lista ordenada por fecha de última compra (más reciente primero).
+        </div>
+
+        <div className="mt-2 overflow-x-auto">
           <table id="customers-table-all" className="min-w-full text-sm">
             <thead className="bg-gray-100">
               <tr>
@@ -996,22 +1139,29 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
                 <th className="p-2 text-left">Tipo</th>
                 <th className="p-2 text-left">Contacto</th>
                 <th className="p-2 text-left">Documento</th>
-                <th className="p-2 text-right">Total Gastado</th>
-                <th className="p-2 text-right">Compras</th>
+                <th className="p-2 text-right">Total Gastado ({customerReportMode === 'all' ? 'Gral' : (customerReportMode === 'sales' ? 'Prod' : 'Serv')})</th>
+                <th className="p-2 text-right">Visitas/Tickets</th>
+                <th className="p-2 text-right">Última Compra</th>
               </tr>
             </thead>
             <tbody>
               {paginatedClients.map((c, i) => (
                 <tr key={i} className="border-b hover:bg-gray-50">
-                  <td className="p-2">{c.id}</td>
-                  <td className="p-2">{c.name}</td>
+                  <td className="p-2 text-xs text-gray-400">{c.id.substring(0, 6)}...</td>
+                  <td className="p-2 font-medium">{c.name}</td>
                   <td className="p-2">{c.type}</td>
                   <td className="p-2">{c.contact}</td>
                   <td className="p-2">{c.cedula || ''}</td>
-                  <td className="p-2 text-right">{formatGuarani(c.totalSpent)}</td>
+                  <td className="p-2 text-right font-bold text-gray-700">{formatGuarani(c.totalSpent)}</td>
                   <td className="p-2 text-right">{c.purchaseCount}</td>
+                  <td className="p-2 text-right text-gray-500">{formatDate(c.lastPurchase) || '-'}</td>
                 </tr>
               ))}
+              {paginatedClients.length === 0 && (
+                <tr>
+                  <td colSpan="8" className="p-4 text-center text-gray-500">No se encontraron clientes para este criterio.</td>
+                </tr>
+              )}
             </tbody>
           </table>
           {/* Controles de paginación */}
@@ -1203,9 +1353,147 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
     );
   };
 
+
+
+  const renderServices = () => {
+    const data = (serviceAnalysis.topServices || []).slice(0, 10);
+    const topHairdressers = (serviceAnalysis.topHairdressers || []).slice(0, 10);
+    const detailedList = serviceAnalysis.detailedServices || [];
+
+    const { currentPage, rowsPerPage } = pagination.services;
+    const totalRows = detailedList.length;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedServices = detailedList.slice(startIndex, startIndex + rowsPerPage);
+
+    return (
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h3 className="text-xl font-bold mb-4">Reporte de Servicios</h3>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Gráfico de Mejores Servicios */}
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <h4 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">Servicios Más Rentables</h4>
+            <div style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(value) => formatGuarani(value)} />
+                  <Bar dataKey="revenue" name="Ingresos (₲)" fill="#8884d8" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Gráfico de Mejores Peluqueros */}
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <h4 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">Mejores Peluqueros (Ganancias del Empleado)</h4>
+            {topHairdressers.length > 0 ? (
+              <div style={{ height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topHairdressers} layout="vertical" margin={{ left: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(value) => formatGuarani(value)} />
+                    <Legend />
+                    <Bar dataKey="earnings" name="Ganancia Empleado (₲)" fill="#10b981" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="revenue" name="Total Generado (₲)" fill="#8884d8" radius={[0, 4, 4, 0]} opacity={0.5} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400 italic">Sin datos de peluqueros</div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <h4 className="font-semibold mb-3 text-lg border-b pb-2">Detalle de Servicios Realizados</h4>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 text-gray-700">
+                <tr>
+                  <th className="p-3 text-left font-semibold">Fecha</th>
+                  <th className="p-3 text-left font-semibold">Servicio</th>
+                  <th className="p-3 text-left font-semibold">Cliente</th>
+                  <th className="p-3 text-left font-semibold">Peluquero</th>
+                  <th className="p-3 text-right font-semibold">Precio</th>
+                  <th className="p-3 text-right font-semibold">Ganancia (Emp)</th>
+                  <th className="p-3 text-right font-semibold">Ganancia (Local)</th>
+                  <th className="p-3 text-right font-semibold">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paginatedServices.map((row, idx) => (
+                  <tr key={idx} className="hover:bg-blue-50 transition-colors">
+                    <td className="p-3 text-gray-600">{formatDate(row.date)}</td>
+                    <td className="p-3 font-medium text-gray-800">{row.serviceName}</td>
+                    <td className="p-3 text-gray-700">{row.clientName}</td>
+                    <td className="p-3 text-gray-700">
+                      <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-semibold">
+                        {row.hairdresserName}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right text-gray-600">{formatGuarani(row.price)}</td>
+                    <td className="p-3 text-right font-semibold text-green-600">
+                      {row.employeeEarnings > 0 ? formatGuarani(row.employeeEarnings) : '-'}
+                    </td>
+                    <td className="p-3 text-right font-semibold text-blue-600">
+                      {row.businessEarnings > 0 ? formatGuarani(row.businessEarnings) : '-'}
+                    </td>
+                    <td className="p-3 text-right font-bold text-gray-900">{formatGuarani(row.subtotal)}</td>
+                  </tr>
+                ))}
+                {paginatedServices.length === 0 && (
+                  <tr>
+                    <td colSpan="8" className="p-8 text-center text-gray-400 italic">No se encontraron registros en este periodo</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex justify-between items-center border-t pt-4">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600">Filas:</label>
+                <select
+                  value={pagination.services.rowsPerPage}
+                  onChange={(e) => setPagination(prev => ({ ...prev, services: { ...prev.services, rowsPerPage: Number(e.target.value), currentPage: 1 } }))}
+                  className="px-2 py-1 border rounded bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, services: { ...prev.services, currentPage: Math.max(1, prev.services.currentPage - 1) } }))}
+                  disabled={pagination.services.currentPage === 1}
+                  className="px-3 py-1 bg-white border hover:bg-gray-50 rounded disabled:opacity-50 text-sm font-medium transition-colors"
+                >Anterior</button>
+                <span className="text-sm font-medium text-gray-700">Página {pagination.services.currentPage} de {totalPages}</span>
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, services: { ...prev.services, currentPage: Math.min(totalPages, prev.services.currentPage + 1) } }))}
+                  disabled={pagination.services.currentPage === totalPages}
+                  className="px-3 py-1 bg-white border hover:bg-gray-50 rounded disabled:opacity-50 text-sm font-medium transition-colors"
+                >Siguiente</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Main render
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
         <div className="space-x-2">
           <button onClick={() => setReportType('sales')} className={`px-4 py-2 rounded ${reportType === 'sales' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Ventas</button>
@@ -1215,6 +1503,7 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
           )}
           <button onClick={() => setReportType('customers')} className={`px-4 py-2 rounded ${reportType === 'customers' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Clientes</button>
           <button onClick={() => setReportType('products')} className={`px-4 py-2 rounded ${reportType === 'products' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Productos</button>
+          <button onClick={() => setReportType('services')} className={`px-4 py-2 rounded ${reportType === 'services' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Servicios</button>
         </div>
 
         {/* Filtros específicos según reporte */}
@@ -1392,6 +1681,7 @@ const ReportsModule = ({ sales = [], purchases = [], persons = [], products = []
         {reportType === 'purchases' && renderPurchases()}
         {reportType === 'customers' && renderCustomers()}
         {reportType === 'products' && renderProducts()}
+        {reportType === 'services' && renderServices()}
 
         {/* If server-provided KPIs exist, show a compact summary */}
         {serverSalesSummary && currentUser && currentUser.role === 'admin' && (
